@@ -1,0 +1,28 @@
+{
+  "name": "govscan-ai",
+  "version": "0.1.0",
+  "description": "Personal Government Job Radar — finds Indian govt/PSU job notifications, checks eligibility via Gemini, alerts on Telegram",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "check": "node src/cli/check.js",
+    "export": "node src/cli/export-csv.js",
+    "add": "node src/cli/add.js",
+    "discover": "node src/cli/discover.js",
+    "daily": "node src/cli/daily-run.js",
+    "reminders": "node src/cli/reminders.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.0",
+    "sql.js": "^1.11.0",
+    "cheerio": "^1.0.0",
+    "dotenv": "^16.4.0",
+    "mammoth": "^1.8.0",
+    "node-fetch": "^3.3.0",
+    "pdf-parse": "^1.1.1"
+  },
+  "devDependencies": {}
+}

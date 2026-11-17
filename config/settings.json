@@ -1,0 +1,35 @@
+{
+  "gemini": {
+    "model": "gemini-2.0-flash",
+    "daily_limit": 1400,
+    "rpm_limit": 15,
+    "request_delay_ms": 4500,
+    "max_retries_per_item": 3,
+    "max_pdf_pages_auto": 50,
+    "source": "https://ai.google.dev/pricing — verified 2026-11-17"
+  },
+  "pipeline": {
+    "verify_keywords_skip": [
+      "admit card", "answer key", "result", "marks", "score card",
+      "tender", "quotation", "expression of interest",
+      "minutes of meeting", "annual report"
+    ],
+    "verify_keywords_corrigendum": [
+      "corrigendum", "addendum", "amendment", "erratum", "extension"
+    ],
+    "official_domains": [
+      ".gov.in", ".nic.in", ".ac.in", ".res.in",
+      ".cdac.in", ".isro.gov.in", ".drdo.gov.in",
+      ".bel-india.in", ".bhel.in", ".ecil.co.in"
+    ]
+  },
+  "telegram": {
+    "alert_tiers": [1, 2],
+    "alert_manual_review": true,
+    "deadline_reminders_days": [7, 2],
+    "weekly_report_day": "Sunday"
+  },
+  "health_check": {
+    "source_silent_alert_days": 7
+  }
+}

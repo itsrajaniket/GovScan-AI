@@ -1,0 +1,78 @@
+{
+  "dob": "23-03-1999",
+  "gender": "Male",
+  "category": "OBC",
+  "obc_ncl_central_certificate": true,
+  "domicile_state": "Bihar",
+  "current_location": "Indore, Madhya Pradesh",
+  "open_to_relocation": true,
+  "minimum_salary": null,
+
+  "education": [
+    {
+      "level": "Class 12",
+      "board": "CBSE",
+      "year": 2016,
+      "subjects": ["Physics", "Chemistry", "Maths", "English"],
+      "percentage": 70.4,
+      "mode": "regular",
+      "status": "completed"
+    },
+    {
+      "level": "B.Sc (Hons)",
+      "subject": "Physics",
+      "university": "Ranchi University",
+      "year": 2019,
+      "percentage": 63.13,
+      "mode": "regular",
+      "status": "completed"
+    },
+    {
+      "level": "M.Sc",
+      "subject": "Electronics & Communication",
+      "university": "Ranchi University",
+      "year": 2021,
+      "percentage": 78.88,
+      "cgpa": 8.81,
+      "mode": "regular",
+      "status": "completed"
+    },
+    {
+      "level": "PGDCA",
+      "subject": "Computer Applications",
+      "university": "Mangalayatan University",
+      "year_start": "Jul 2025",
+      "year_end": "Jul 2026",
+      "cgpa": 7.43,
+      "mode": "online",
+      "status": "completed",
+      "note": "Online mode — flag if notice requires regular-mode or UGC-DEB recognised degrees"
+    },
+    {
+      "level": "MCA",
+      "subject": "Computer Applications",
+      "university": "Mangalayatan University",
+      "year_start": 2025,
+      "year_end": 2027,
+      "mode": "online",
+      "entry": "lateral entry",
+      "status": "pursuing",
+      "note": "PURSUING — never treat as completed unless the notice explicitly allows final-year/awaiting-result candidates"
+    }
+  ],
+
+  "work_experience": {
+    "formal_documented": false,
+    "skills": ["MERN", "React", "Node.js", "AI integrations"],
+    "note": "Some freelance/internship work without proof documents. Treat any post requiring years of experience as experience_required flag."
+  },
+
+  "employment_types_wanted": ["permanent", "contract", "project", "apprentice"],
+
+  "tier_definitions": {
+    "tier_1": "Notice names exact qualifications: Electronics, Physics, PGDCA, MCA, Computer Applications",
+    "tier_2": "Technical/related discipline, or 'equivalent/relevant discipline' wording",
+    "tier_3": "Any graduate/postgraduate eligible (SSC/Banking/Railways fall here)",
+    "tier_4": "Unrelated or clearly not eligible"
+  }
+}
