@@ -1,7 +1,8 @@
 // src/cli/check.js
-// CLI command: node src/cli/check.js <pdf-path-or-url>
+// CLI command: node src/cli/check.js <pdf-path-or-url> [--save] [--alert]
 // Sends one notice to Gemini, prints validated JSON.
-// This is T1.1 — the core "prove the brain" command.
+// --save: also saves results to the database
+// --alert: also sends Telegram alerts for eligible/manual-review posts
 
 import fs from 'fs';
 import path from 'path';
@@ -32,14 +33,21 @@ function isURL(str) {
 // ── Main ─────────────────────────────────────────────────
 
 async function main() {
-  const input = process.argv[2];
+  const args = process.argv.slice(2);
+  const flagSave = args.includes('--save');
+  const flagAlert = args.includes('--alert');
+  const input = args.find(a => !a.startsWith('--'));
 
   if (!input) {
-    console.error('Usage: node src/cli/check.js <pdf-path-or-url>');
+    console.error('Usage: node src/cli/check.js <pdf-path-or-url> [--save] [--alert]');
+    console.error('');
+    console.error('Options:');
+    console.error('  --save   Save results to the database');
+    console.error('  --alert  Send Telegram alerts for Tier 1/2 and Manual Review posts');
     console.error('');
     console.error('Examples:');
     console.error('  node src/cli/check.js ./data/notices/cdac-notification.pdf');
-    console.error('  node src/cli/check.js https://www.cdac.in/some-notification.pdf');
+    console.error('  node src/cli/check.js https://www.cdac.in/some-notification.pdf --save --alert');
     process.exit(1);
   }
 
@@ -269,6 +277,44 @@ async function main() {
     },
   }));
   console.log(JSON.stringify(output, null, 2));
+
+  // ── Step 6 (optional): Save to database ──
+
+  if (flagSave) {
+    printSection('Saving to database');
+    const { upsertJob, closeDB } = await import('../core/database.js');
+    let inserted = 0, updated = 0, unchanged = 0;
+    for (const p of output) {
+      const result = await upsertJob({
+        ...p,
+        pdf_hash: doc.hash,
+        gemini_model_used: modelUsed,
+        tokens_used: tokensUsed,
+        source_type: wasDownloaded ? 'manual_url' : 'manual_file',
+        local_pdf_path: filePath,
+      });
+      if (result.action === 'inserted') inserted++;
+      else if (result.action === 'updated') updated++;
+      else unchanged++;
+      if (result.corrigendum) console.log(`⚠️  Corrigendum detected for: ${p.post_name}`);
+    }
+    console.log(`💾 Database: ${inserted} inserted, ${updated} updated, ${unchanged} unchanged`);
+    closeDB();
+  }
+
+  // ── Step 7 (optional): Send Telegram alerts ──
+
+  if (flagAlert) {
+    printSection('Sending Telegram alerts');
+    const { sendJobAlerts } = await import('../core/telegram.js');
+    const results = await sendJobAlerts(output);
+    const sent = results.filter(r => r.sent).length;
+    const skipped = output.length - results.length;
+    console.log(`📱 Telegram: ${sent} alerts sent, ${skipped} skipped (tier/status rules)`);
+    for (const r of results) {
+      if (!r.sent) console.log(`   ⚠️  Failed: ${r.post} — ${r.error}`);
+    }
+  }
 }
 
 function computeDaysLeft(ddmmyyyy) {

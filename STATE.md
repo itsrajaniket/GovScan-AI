@@ -1,8 +1,8 @@
 # STATE.md — GovScan AI
 
-**Current Phase:** 0 — Setup
-**Last Updated:** 2026-11-17T17:03+05:30
-**Last Session Summary:** Phase 0 COMPLETE. Created project structure, git repo, all config files, tracking files, package.json, installed deps. Applied all 9 user amendments to DECISIONS.md. Switched from better-sqlite3 to sql.js (no Visual Studio needed).
+**Current Phase:** 2 — Storage & Alerts
+**Last Updated:** 2026-11-18T13:31+05:30
+**Last Session Summary:** Phase 1 brain PROVEN. gemini-3.5-flash works. Test on mock CDAC notification: 3 posts found, all correctly evaluated (Eligible for Electronics PE + TA, Not Eligible for CS PE due to MCA pursuing). Schema validation and retry logic built. T1.2 pending user's 5 real PDFs. Moving to Phase 2.
 
 ---
 
@@ -15,9 +15,9 @@
 - [x] T0.4 package.json + install dependencies (sql.js instead of better-sqlite3, see D002)
 
 ### PHASE 1 — Prove the Brain
-- [ ] T1.1 CLI: `node check <pdf-or-url>` sends one notice to Gemini, prints validated JSON
-- [ ] T1.2 User provides 5 real PDFs; run them; show results for judgment; tune prompt
-- [ ] T1.3 Schema validation + retry logic + error handling
+- [x] T1.1 CLI: `node check <pdf-or-url>` sends one notice to Gemini, prints validated JSON ✅ PROVEN
+- [~] T1.2 User provides 5 real PDFs; run them; show results for judgment; tune prompt (waiting for PDFs)
+- [x] T1.3 Schema validation + retry logic + error handling ✅ Built
 
 ### PHASE 2 — Storage & Alerts
 - [ ] T2.1 SQLite schema + dedupe logic

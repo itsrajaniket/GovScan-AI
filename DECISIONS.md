@@ -57,3 +57,7 @@ All architectural and design decisions, logged in order.
 ### D012 — .env.example with Comments (Amendment 9)
 **Date:** 2026-11-17
 **Why:** Each variable has a comment explaining what it is and where to get it. GEMINI_DAILY_LIMIT defaults to 1400 (below 1500 RPD official limit).
+
+### D013 — Model: gemini-3.5-flash (not 3.8)
+**Date:** 2026-11-17
+**Why:** gemini-2.0-flash returns 404 (retired). gemini-3.8-flash and gemini-flash-latest return 503 (high demand). gemini-2.5-flash returns 404 (not available to new users). gemini-3.5-flash works reliably, produces excellent structured JSON output on the eligibility task, and costs 4005 tokens per 3-post notification. Keeping the model name in .env so it can be changed anytime.
