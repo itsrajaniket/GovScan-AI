@@ -1,8 +1,8 @@
 # STATE.md — GovScan AI
 
-**Current Phase:** 2 — Storage & Alerts
-**Last Updated:** 2026-11-18T13:31+05:30
-**Last Session Summary:** Phase 1 brain PROVEN. gemini-3.5-flash works. Test on mock CDAC notification: 3 posts found, all correctly evaluated (Eligible for Electronics PE + TA, Not Eligible for CS PE due to MCA pursuing). Schema validation and retry logic built. T1.2 pending user's 5 real PDFs. Moving to Phase 2.
+**Current Phase:** 2 — Storage & Alerts (nearly complete)
+**Last Updated:** 2026-11-18T22:57+05:30
+**Last Session Summary:** Phase 2 nearly complete. SQLite schema + dedup + CSV export all tested working. Telegram module coded with full template formatting, deadline reminders, weekly report. Needs bot token to live-test. check.js now supports --save and --alert flags.
 
 ---
 
@@ -20,9 +20,9 @@
 - [x] T1.3 Schema validation + retry logic + error handling ✅ Built
 
 ### PHASE 2 — Storage & Alerts
-- [ ] T2.1 SQLite schema + dedupe logic
-- [ ] T2.2 Telegram bot send + tier-based alert rules
-- [ ] T2.3 CSV export command
+- [x] T2.1 SQLite schema + dedupe logic ✅ Tested
+- [~] T2.2 Telegram bot send + tier-based alert rules (code ready, needs bot token to test)
+- [x] T2.3 CSV export command ✅ Tested
 
 ### PHASE 3 — Discovery
 - [ ] T3.1 Google Alerts RSS reader
@@ -42,14 +42,14 @@
 ---
 
 ## What's Next
-**Phase 1 — Prove the Brain.** T1.1: Build the `node check <pdf-or-url>` CLI command. Blocked on Gemini API Key (NEEDS_FROM_USER #1).
+**Phase 2 completion:** Need Telegram Bot Token + Chat ID to live-test alerts (NEEDS_FROM_USER #2, #3). Then move to Phase 3 — Discovery.
+**Parallel:** T1.2 still needs 5 real PDFs from user (NEEDS_FROM_USER #4).
 
 ## Known Bugs
-None yet.
+None.
 
 ## Blocked
-- T1.1 blocked on: **Gemini API Key** (NEEDS_FROM_USER #1)
-- T2.2 blocked on: **Telegram Bot Token + Chat ID** (NEEDS_FROM_USER #2, #3)
+- T2.2 live test blocked on: **Telegram Bot Token + Chat ID** (NEEDS_FROM_USER #2, #3)
 - T1.2 blocked on: **5 Sample PDFs** (NEEDS_FROM_USER #4)
 
 ## Amendments Applied
