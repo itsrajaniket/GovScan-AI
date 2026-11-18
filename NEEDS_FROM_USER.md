@@ -6,7 +6,7 @@ Items the builder needs from the user. Never guess secrets or values that must c
 
 | # | What | Why | Where to get it | Blocks task | Status |
 |---|------|-----|-----------------|-------------|--------|
-| 1 | **Gemini API Key** | Required to call the Gemini API for eligibility checking | Go to https://aistudio.google.com/apikey → sign in → "Create API key" → copy the key | T1.1 (CLI check command) | 🔴 OPEN |
+| 1 | **Gemini API Key** | Required to call the Gemini API for eligibility checking | Go to https://aistudio.google.com/apikey → sign in → "Create API key" → copy the key | T1.1 (CLI check command) | ✅ RECEIVED 2026-11-17 |
 | 2 | **Telegram Bot Token** | Required to send alerts and reports via Telegram | Open Telegram → search @BotFather → /newbot → follow prompts → copy the HTTP API token | T2.2 (Telegram alerts) | 🔴 OPEN |
 | 3 | **Telegram Chat ID** | Required to know where to send messages | Open Telegram → search @userinfobot → start → it replies with your numeric ID | T2.2 (Telegram alerts) | 🔴 OPEN |
 | 4 | **5 Sample Notice PDFs** | Needed to test and tune the eligibility prompt in Phase 1 | Pick 5 real past government job notification PDFs you've seen — a mix of eligible, not eligible, and borderline | T1.2 (prompt tuning) | 🔴 OPEN |

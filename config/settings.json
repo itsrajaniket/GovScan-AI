@@ -1,6 +1,6 @@
 {
   "gemini": {
-    "model": "gemini-2.0-flash",
+    "model": "gemini-3.8-flash",
     "daily_limit": 1400,
     "rpm_limit": 15,
     "request_delay_ms": 4500,
