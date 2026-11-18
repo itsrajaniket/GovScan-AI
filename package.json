@@ -13,7 +13,8 @@
     "add": "node src/cli/add.js",
     "discover": "node src/cli/discover.js",
     "daily": "node src/cli/daily-run.js",
-    "reminders": "node src/cli/reminders.js"
+    "reminders": "node src/cli/reminders.js",
+    "dashboard": "node src/cli/dashboard.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",

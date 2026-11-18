@@ -1,4 +1,4 @@
-﻿# scripts/setup-task-scheduler.ps1
+# scripts/setup-task-scheduler.ps1
 # Registers a daily scheduled task in Windows Task Scheduler for GovScan AI.
 
 $ErrorActionPreference = "Stop"

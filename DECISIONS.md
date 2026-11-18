@@ -65,3 +65,7 @@ All architectural and design decisions, logged in order.
 ### D014 — SQLite Date Normalization (ISO YYYY-MM-DD)
 **Date:** 2026-11-19
 **Why:** SQLite's built-in date functions (`date('now')`, date comparisons `>=`, `<=`, and `ORDER BY`) rely on ISO format `YYYY-MM-DD`. If dates are stored as `DD-MM-YYYY`, lexicographical comparisons produce wrong results (e.g. `'15-02-2027' < '2026-11-19'` would evaluate to true because `'1' < '2'`). All dates (`last_date`, `age_cutoff_date`) are normalized to `YYYY-MM-DD` upon database storage, while user-facing alerts and displays are formatted as `DD-MM-YYYY`.
+
+### D015 — Automation & Task Scheduler Architecture
+**Date:** 2026-11-19
+**Why:** Configured Windows Task Scheduler task (`GovScanAI_DailyRun`) running daily at 08:30 AM with battery allowances enabled (`-AllowStartIfOnBatteries`, `-DontStopIfGoingOnBatteries`, `-StartWhenAvailable`). Output is streamed and mirrored into `logs/daily_YYYY-MM-DD.log`. If unhandled exceptions occur during any step of the daily pipeline, an urgent Telegram alert is dispatched immediately to notify the user.
