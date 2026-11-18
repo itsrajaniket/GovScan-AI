@@ -1,8 +1,8 @@
 # STATE.md — GovScan AI
 
-**Current Phase:** 3 — Discovery
-**Last Updated:** 2026-11-19T04:08+05:30
-**Last Session Summary:** Phase 2 COMPLETE. Telegram bot linked (Chat ID 955347757). Live alerts verified. Fixed SQLite date normalization issue (D014). Ready to build Phase 3 Discovery (RSS reader, page watcher, verification step, manual add).
+**Current Phase:** 4 — Automation
+**Last Updated:** 2026-11-19T04:22+05:30
+**Last Session Summary:** Phase 3 COMPLETE. Built verification pipeline (heuristic + domain whitelist), Google Alerts RSS parser (with URL unwrapping), CSS-selector page watcher with health monitoring, full discovery engine (`discover.js`), and manual add CLI (`add.js`). Added universal transient-error exponential backoff to `gemini.js`.
 
 ---
 
@@ -25,10 +25,10 @@
 - [x] T2.3 CSV export command ✅ Tested
 
 ### PHASE 3 — Discovery
-- [ ] T3.1 Google Alerts RSS reader
-- [ ] T3.2 Page watcher with CSS-selector hashing (5 sources)
-- [ ] T3.3 Verification step (keyword heuristic first, Gemini for ambiguous)
-- [ ] T3.4 Manual "add URL/PDF" command
+- [x] T3.1 Google Alerts RSS reader (`src/core/rss.js`) ✅ Tested
+- [x] T3.2 Page watcher with CSS-selector hashing (`src/core/watcher.js`) ✅ Built
+- [x] T3.3 Verification step (`src/core/verify.js`) ✅ Tested
+- [x] T3.4 Manual "add URL/PDF" command (`src/cli/add.js`) ✅ Tested end-to-end
 
 ### PHASE 4 — Automation
 - [ ] T4.1 Daily run via Task Scheduler, logging, failure alerts to Telegram
@@ -42,17 +42,16 @@
 ---
 
 ## What's Next
-**Phase 3 — Discovery:**
-- T3.1 Google Alerts RSS reader
-- T3.2 Page watcher with CSS-selector hashing (5 sources)
-- T3.3 Verification step (keyword heuristic first, Gemini for ambiguous)
-- T3.4 Manual "add URL/PDF" command (`node src/cli/add.js`)
+**Phase 4 — Automation:**
+- T4.1 Daily run orchestrator (`src/cli/daily-run.js`), Task Scheduler setup script, logging, failure alerts to Telegram.
+- T4.2 Deadline reminders (7d, 2d countdowns) + weekly missed-jobs report (`src/cli/reminders.js`).
 
 ## Known Bugs
 None.
 
 ## Blocked
-- T1.2 waiting on: **5 Sample PDFs** (NEEDS_FROM_USER #4) for real-world prompt calibration (can run concurrently).
+- T1.2 waiting on: **5 Sample PDFs** (NEEDS_FROM_USER #4) for prompt fine-tuning (can be done anytime).
+- Source career URLs in `config/sources.json` can be verified and activated as user confirms them.
 
 ## Amendments Applied
 All 9 amendments from user (2026-11-17) recorded in DECISIONS.md as D004–D012.
