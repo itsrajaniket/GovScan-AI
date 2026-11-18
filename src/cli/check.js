@@ -317,9 +317,22 @@ async function main() {
   }
 }
 
-function computeDaysLeft(ddmmyyyy) {
+function computeDaysLeft(dateStr) {
+  if (!dateStr || dateStr === 'not stated') return null;
   try {
-    const [dd, mm, yyyy] = ddmmyyyy.split('-').map(Number);
+    let yyyy, mm, dd;
+    if (dateStr.includes('-')) {
+      const parts = dateStr.split('-').map(Number);
+      if (parts[0] > 1000) {
+        // YYYY-MM-DD
+        [yyyy, mm, dd] = parts;
+      } else {
+        // DD-MM-YYYY
+        [dd, mm, yyyy] = parts;
+      }
+    } else {
+      return null;
+    }
     const deadline = new Date(yyyy, mm - 1, dd);
     const today = new Date();
     today.setHours(0, 0, 0, 0);

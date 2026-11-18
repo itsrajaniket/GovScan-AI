@@ -61,3 +61,7 @@ All architectural and design decisions, logged in order.
 ### D013 — Model: gemini-3.5-flash (not 3.8)
 **Date:** 2026-11-17
 **Why:** gemini-2.0-flash returns 404 (retired). gemini-3.8-flash and gemini-flash-latest return 503 (high demand). gemini-2.5-flash returns 404 (not available to new users). gemini-3.5-flash works reliably, produces excellent structured JSON output on the eligibility task, and costs 4005 tokens per 3-post notification. Keeping the model name in .env so it can be changed anytime.
+
+### D014 — SQLite Date Normalization (ISO YYYY-MM-DD)
+**Date:** 2026-11-19
+**Why:** SQLite's built-in date functions (`date('now')`, date comparisons `>=`, `<=`, and `ORDER BY`) rely on ISO format `YYYY-MM-DD`. If dates are stored as `DD-MM-YYYY`, lexicographical comparisons produce wrong results (e.g. `'15-02-2027' < '2026-11-19'` would evaluate to true because `'1' < '2'`). All dates (`last_date`, `age_cutoff_date`) are normalized to `YYYY-MM-DD` upon database storage, while user-facing alerts and displays are formatted as `DD-MM-YYYY`.

@@ -3,6 +3,7 @@
 // Uses the Telegram Bot HTTP API directly (no extra dependency).
 
 import { getConfig } from './config.js';
+import { formatDateToDisplay } from './database.js';
 
 const API_BASE = 'https://api.telegram.org/bot';
 
@@ -82,7 +83,8 @@ export function formatJobAlert(post) {
   if (post.vacancies_count) msg += `👥 Vacancies: ${post.vacancies_count}\n`;
 
   if (post.last_date) {
-    msg += `⏰ Last Date: <b>${escHtml(post.last_date)}</b> ${daysStr}\n`;
+    const displayDate = formatDateToDisplay(post.last_date);
+    msg += `⏰ Last Date: <b>${escHtml(displayDate)}</b> ${daysStr}\n`;
   }
 
   if (flags.length > 0) {
@@ -191,10 +193,22 @@ export async function sendWeeklyReport(missed, unreviewedManualReview) {
 
 // ── Helpers ──
 
-function computeDaysLeft(ddmmyyyy) {
-  if (!ddmmyyyy || ddmmyyyy === 'not stated') return null;
+function computeDaysLeft(dateStr) {
+  if (!dateStr || dateStr === 'not stated') return null;
   try {
-    const [dd, mm, yyyy] = ddmmyyyy.split('-').map(Number);
+    let yyyy, mm, dd;
+    if (dateStr.includes('-')) {
+      const parts = dateStr.split('-').map(Number);
+      if (parts[0] > 1000) {
+        // YYYY-MM-DD
+        [yyyy, mm, dd] = parts;
+      } else {
+        // DD-MM-YYYY
+        [dd, mm, yyyy] = parts;
+      }
+    } else {
+      return null;
+    }
     const deadline = new Date(yyyy, mm - 1, dd);
     const today = new Date();
     today.setHours(0, 0, 0, 0);

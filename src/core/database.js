@@ -10,6 +10,44 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DB_PATH = path.join(__dirname, '..', '..', 'data', 'govscan.sqlite');
 
+/**
+ * Normalize DD-MM-YYYY or YYYY-MM-DD into ISO YYYY-MM-DD for reliable SQLite date operations.
+ */
+export function normalizeDateToISO(dateStr) {
+  if (!dateStr || dateStr === 'not stated') return null;
+  const str = String(dateStr).trim();
+  const ddmmyyyy = /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/;
+  const match = str.match(ddmmyyyy);
+  if (match) {
+    const dd = match[1].padStart(2, '0');
+    const mm = match[2].padStart(2, '0');
+    const yyyy = match[3];
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  const yyyymmdd = /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/;
+  const matchIso = str.match(yyyymmdd);
+  if (matchIso) {
+    const yyyy = matchIso[1];
+    const mm = matchIso[2].padStart(2, '0');
+    const dd = matchIso[3].padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  return str;
+}
+
+/**
+ * Format ISO YYYY-MM-DD into DD-MM-YYYY for user display.
+ */
+export function formatDateToDisplay(isoStr) {
+  if (!isoStr || isoStr === 'not stated') return isoStr || '';
+  const yyyymmdd = /^(\d{4})-(\d{2})-(\d{2})$/;
+  const match = String(isoStr).match(yyyymmdd);
+  if (match) {
+    return `${match[3]}-${match[2]}-${match[1]}`;
+  }
+  return isoStr;
+}
+
 let _db = null;
 
 /**
@@ -144,6 +182,8 @@ export async function upsertJob(post) {
   const db = await getDB();
 
   const flagsJson = JSON.stringify(post.flags || []);
+  const normalizedLastDate = normalizeDateToISO(post.last_date);
+  const normalizedAgeCutoff = normalizeDateToISO(post.age_cutoff_date);
 
   // Check for existing record (dedup)
   const existing = db.exec(`
@@ -178,10 +218,10 @@ export async function upsertJob(post) {
         WHERE id = ?
       `, [
         post.post_name, post.employment_type, post.tier, post.status,
-        post.age_cutoff_date, post.max_age_for_my_category,
+        normalizedAgeCutoff, post.max_age_for_my_category,
         post.qualification_clause, post.page_number, flagsJson,
         post.vacancies_count, post.pay, post.location, post.fee,
-        post.last_date, post.official_notification_url, post.official_apply_url,
+        normalizedLastDate, post.official_notification_url, post.official_apply_url,
         post.reasoning,
         post.pdf_hash, post.gemini_model_used, post.tokens_used,
         post.local_pdf_path || null,
@@ -220,10 +260,10 @@ export async function upsertJob(post) {
   `, [
     post.organisation, post.advertisement_no || null, post.post_code || null,
     post.post_name, post.employment_type, post.tier, post.status,
-    post.age_cutoff_date, post.max_age_for_my_category,
+    normalizedAgeCutoff, post.max_age_for_my_category,
     post.qualification_clause, post.page_number, flagsJson,
     post.vacancies_count, post.pay, post.location, post.fee,
-    post.last_date, post.official_notification_url, post.official_apply_url,
+    normalizedLastDate, post.official_notification_url, post.official_apply_url,
     post.reasoning, post.source_type || 'manual', post.local_pdf_path || null,
     post.pdf_hash, post.gemini_model_used, post.tokens_used,
   ]);
