@@ -37,7 +37,7 @@
 ### PHASE 5 — Extras
 - [ ] T5.1 Google Sheet sync
 - [ ] T5.2 Grow sources to 25+
-- [ ] T5.3 Simple local dashboard (optional)
+- [x] T5.3 Simple local dashboard to filter by tier/status/deadline (`src/cli/dashboard.js`, `npm run dashboard`) ✅ Built and tested
 
 ---
 

@@ -69,3 +69,7 @@ All architectural and design decisions, logged in order.
 ### D015 — Automation & Task Scheduler Architecture
 **Date:** 2026-11-19
 **Why:** Configured Windows Task Scheduler task (`GovScanAI_DailyRun`) running daily at 08:30 AM with battery allowances enabled (`-AllowStartIfOnBatteries`, `-DontStopIfGoingOnBatteries`, `-StartWhenAvailable`). Output is streamed and mirrored into `logs/daily_YYYY-MM-DD.log`. If unhandled exceptions occur during any step of the daily pipeline, an urgent Telegram alert is dispatched immediately to notify the user.
+
+### D016 — Local HTML Dashboard Architecture (T5.3)
+**Date:** 2026-11-19
+**Why:** Built a zero-dependency standalone HTML dashboard generator (`src/cli/dashboard.js`, outputting `data/dashboard.html`). It inlines the SQLite database records into a single file with client-side reactive filtering (by Tier, Eligibility Status, Deadline status, and free-text search across posts/orgs/qualifications/reasoning). Also wired into `daily-run.js` so it automatically regenerates every morning.
