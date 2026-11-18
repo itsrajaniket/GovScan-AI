@@ -149,46 +149,21 @@ async function main() {
     console.log(`📝 Extracted ${textContent.length} characters of text.`);
   }
 
-  let rawResponse;
-  let tokensUsed;
-  let modelUsed;
-  let retryCount = 0;
-  const maxRetries = 3; // Retry up to 3 times for transient errors (503, rate limits)
+  console.log('⏳ Waiting for Gemini response...');
+  const result = await checkEligibility({
+    apiKey: config.gemini.apiKey,
+    model: config.gemini.model,
+    dailyLimit: config.gemini.dailyLimit,
+    promptTemplate: config.promptTemplate,
+    profileJson: config.profileJson,
+    pdfBuffer,
+    textContent,
+    mimeType,
+  });
 
-  while (retryCount <= maxRetries) {
-    try {
-      if (retryCount > 0) console.log(`\n🔄 Retry ${retryCount}/${maxRetries}...`);
-      console.log('⏳ Waiting for Gemini response...');
-
-      const result = await checkEligibility({
-        apiKey: config.gemini.apiKey,
-        model: config.gemini.model,
-        dailyLimit: config.gemini.dailyLimit,
-        promptTemplate: config.promptTemplate,
-        profileJson: config.profileJson,
-        pdfBuffer,
-        textContent,
-        mimeType,
-      });
-
-      rawResponse = result.raw;
-      tokensUsed = result.tokensUsed;
-      modelUsed = result.modelUsed;
-      break; // Success
-    } catch (err) {
-      const isTransient = err.message.includes('503') || err.message.includes('429')
-        || err.message.includes('overloaded') || err.message.includes('high demand');
-      retryCount++;
-      if (retryCount > maxRetries) {
-        console.error(`\n❌ Gemini API error after ${maxRetries + 1} attempts: ${err.message}`);
-        process.exit(1);
-      }
-      const delay = isTransient ? retryCount * 10 : 5; // Back off longer for 503/429
-      console.log(`\n⚠️  Error: ${err.message}`);
-      console.log(`   Retrying in ${delay} seconds...`);
-      await new Promise(r => setTimeout(r, delay * 1000));
-    }
-  }
+  const rawResponse = result.raw;
+  const tokensUsed = result.tokensUsed;
+  const modelUsed = result.modelUsed;
 
   // ── Step 4: Parse and validate ──
 

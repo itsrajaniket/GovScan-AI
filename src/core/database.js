@@ -156,9 +156,14 @@ export async function getDB() {
       last_checked TEXT,
       last_found_items TEXT,
       consecutive_empty_checks INTEGER DEFAULT 0,
-      is_healthy INTEGER DEFAULT 1
+      is_healthy INTEGER DEFAULT 1,
+      content_hash TEXT
     )
   `);
+
+  try {
+    _db.run(`ALTER TABLE source_health ADD COLUMN content_hash TEXT`);
+  } catch {}
 
   save();
   return _db;

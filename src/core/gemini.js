@@ -95,13 +95,7 @@ export async function checkEligibility({
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const genModel = genAI.getGenerativeModel({ 
-    model,
-    generationConfig: {
-      temperature: 0.1,
-      maxOutputTokens: 8192,
-    },
-  });
+  const genModel = genAI.getGenerativeModel({ model });
 
   // Build the prompt with profile injected
   const prompt = promptTemplate.replace('{{PROFILE}}', profileJson);
@@ -127,24 +121,54 @@ export async function checkEligibility({
     throw new Error('Either pdfBuffer or textContent must be provided.');
   }
 
-  // Make the API call (no manual timeout — let the SDK handle it)
-  const result = await genModel.generateContent({
-    contents: [{ role: 'user', parts }],
-  });
+  // Robust retry with exponential backoff for transient errors (503 Service Unavailable / 429 Rate Limit)
+  let lastError;
+  const maxRetries = 3;
 
-  // Increment counter AFTER successful call
-  incrementCounter();
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      if (attempt > 0) {
+        const delay = attempt * 8000;
+        console.log(`⏳ Retry attempt ${attempt}/${maxRetries} after ${delay / 1000}s backoff...`);
+        await new Promise(r => setTimeout(r, delay));
+      }
 
-  const response = result.response;
-  const rawText = response.text();
+      const result = await genModel.generateContent({
+        contents: [{ role: 'user', parts }],
+        generationConfig: {
+          temperature: 0.1, // Low temperature for factual extraction
+          maxOutputTokens: 8192,
+        },
+      });
 
-  // Extract token usage
-  const usage = response.usageMetadata || {};
-  const tokensUsed = (usage.promptTokenCount || 0) + (usage.candidatesTokenCount || 0);
+      // Increment counter AFTER successful call
+      incrementCounter();
 
-  return {
-    raw: rawText,
-    tokensUsed,
-    modelUsed: model,
-  };
+      const response = result.response;
+      const rawText = response.text();
+
+      // Extract token usage
+      const usage = response.usageMetadata || {};
+      const tokensUsed = (usage.promptTokenCount || 0) + (usage.candidatesTokenCount || 0);
+
+      return {
+        raw: rawText,
+        tokensUsed,
+        modelUsed: model,
+      };
+    } catch (err) {
+      lastError = err;
+      const isTransient = err.message.includes('503') ||
+        err.message.includes('429') ||
+        err.message.includes('high demand') ||
+        err.message.includes('overloaded');
+
+      if (!isTransient || attempt === maxRetries) {
+        throw err;
+      }
+      console.warn(`⚠️ Transient API error (attempt ${attempt + 1}/${maxRetries + 1}): ${err.message}`);
+    }
+  }
+
+  throw lastError;
 }
