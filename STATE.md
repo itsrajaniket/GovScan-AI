@@ -1,8 +1,8 @@
 # STATE.md — GovScan AI
 
-**Current Phase:** 4 — Automation
-**Last Updated:** 2026-11-19T04:22+05:30
-**Last Session Summary:** Phase 3 COMPLETE. Built verification pipeline (heuristic + domain whitelist), Google Alerts RSS parser (with URL unwrapping), CSS-selector page watcher with health monitoring, full discovery engine (`discover.js`), and manual add CLI (`add.js`). Added universal transient-error exponential backoff to `gemini.js`.
+**Current Phase:** 5 — Extras (Phases 0-4 Core Pipeline Fully Built & Operational)
+**Last Updated:** 2026-11-19T04:28+05:30
+**Last Session Summary:** Phase 4 COMPLETE. Built master daily runner (`src/cli/daily-run.js`), deadline reminders (7d/2d + Sunday weekly report in `src/cli/reminders.js`), source health checker, daily file logger, and Windows Task Scheduler automated task (`GovScanAI_DailyRun` scheduled daily at 08:30 AM). All core pipeline phases (0 to 4) are now 100% complete and working!
 
 ---
 
@@ -31,8 +31,8 @@
 - [x] T3.4 Manual "add URL/PDF" command (`src/cli/add.js`) ✅ Tested end-to-end
 
 ### PHASE 4 — Automation
-- [ ] T4.1 Daily run via Task Scheduler, logging, failure alerts to Telegram
-- [ ] T4.2 Deadline reminders (7d, 2d) + weekly missed-jobs report
+- [x] T4.1 Daily run via Task Scheduler, logging, failure alerts to Telegram (`src/cli/daily-run.js`, `scripts/setup-task-scheduler.ps1`) ✅ Tested
+- [x] T4.2 Deadline reminders (7d, 2d) + weekly missed-jobs report (`src/cli/reminders.js`) ✅ Tested live via Telegram
 
 ### PHASE 5 — Extras
 - [ ] T5.1 Google Sheet sync
@@ -42,16 +42,17 @@
 ---
 
 ## What's Next
-**Phase 4 — Automation:**
-- T4.1 Daily run orchestrator (`src/cli/daily-run.js`), Task Scheduler setup script, logging, failure alerts to Telegram.
-- T4.2 Deadline reminders (7d, 2d countdowns) + weekly missed-jobs report (`src/cli/reminders.js`).
+**Phase 5 — Extras (Optional enhancements):**
+- T5.1 Google Sheet sync
+- T5.2 Grow sources to 25+ (verify career URLs & CSS selectors for CDAC, NIELIT, ISRO, BEL, CSIR)
+- T5.3 Simple local dashboard to filter by tier/status/deadline (optional)
+- T1.2 5 Real past PDFs calibration run (user can drop them anytime in `data/notices/`)
 
 ## Known Bugs
 None.
 
 ## Blocked
-- T1.2 waiting on: **5 Sample PDFs** (NEEDS_FROM_USER #4) for prompt fine-tuning (can be done anytime).
-- Source career URLs in `config/sources.json` can be verified and activated as user confirms them.
+- None for core operation. All core features (Phases 0-4) are operational and scheduled.
 
 ## Amendments Applied
 All 9 amendments from user (2026-11-17) recorded in DECISIONS.md as D004–D012.

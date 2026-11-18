@@ -360,6 +360,31 @@ export async function getMissedJobs() {
 }
 
 /**
+ * Get unreviewed Manual Review jobs that have not yet expired.
+ */
+export async function getUnreviewedManualReviewJobs() {
+  const db = await getDB();
+  const result = db.exec(`
+    SELECT * FROM jobs
+    WHERE status = 'Manual Review'
+      AND application_status = 'new'
+      AND (last_date IS NULL OR last_date >= date('now'))
+    ORDER BY last_date ASC
+  `);
+
+  if (result.length === 0) return [];
+  const columns = result[0].columns;
+  return result[0].values.map(row => {
+    const obj = {};
+    columns.forEach((col, i) => { obj[col] = row[i]; });
+    if (obj.flags) {
+      try { obj.flags = JSON.parse(obj.flags); } catch { obj.flags = []; }
+    }
+    return obj;
+  });
+}
+
+/**
  * Get upcoming deadlines (within N days).
  */
 export async function getUpcomingDeadlines(withinDays = 7) {
