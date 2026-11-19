@@ -16,7 +16,7 @@ You are a strict eligibility checker for ONE candidate applying to Indian govern
 
 6. OBC & DOMICILE: Flag "obc_certificate" if the notice distinguishes between central OBC-NCL list and state OBC list. Flag "domicile" if the notice has a domicile/residence restriction that excludes Bihar domicile or requires a specific state domicile the candidate does not have.
 
-7. MULTIPLE POSTS: If the notification advertises multiple posts, evaluate EACH post separately and return a separate JSON object for each post.
+7. MULTIPLE POSTS: If the notification advertises multiple posts, evaluate EACH post separately. Focus detailed step-by-step reasoning on relevant posts (Tier 1, 2, 3). For clearly unrelated Tier 4 posts (trades like Nurse, Cook, Welder, Driver, Fireman, Fitter), keep reasoning to 1 short sentence so the complete JSON response fits comfortably within output limits.
 
 8. EVIDENCE: For every eligibility determination, quote the exact clause from the notification and provide the page number. If the notification is not paginated, use approximate location.
 

@@ -126,15 +126,29 @@ export function parseAndValidate(rawText) {
   }
   cleaned = cleaned.trim();
 
-  // Try parsing as JSON
+  // Try parsing as JSON (with auto-salvage for truncated responses)
   try {
     parsed = JSON.parse(cleaned);
   } catch (e) {
-    return {
-      posts: [],
-      errors: [],
-      parseError: `Failed to parse Gemini response as JSON: ${e.message}\n\nRaw response (first 500 chars):\n${rawText.slice(0, 500)}`,
-    };
+    // Attempt salvage if JSON array was truncated
+    if (cleaned.startsWith('[')) {
+      const lastCloseBrace = cleaned.lastIndexOf('}');
+      if (lastCloseBrace !== -1) {
+        try {
+          const salvaged = cleaned.slice(0, lastCloseBrace + 1) + ']';
+          parsed = JSON.parse(salvaged);
+          console.warn(`⚠️ Warning: Gemini response was truncated. Salvaged ${parsed.length} complete post(s).`);
+        } catch {}
+      }
+    }
+
+    if (!parsed) {
+      return {
+        posts: [],
+        errors: [],
+        parseError: `Failed to parse Gemini response as JSON: ${e.message}\n\nRaw response (first 500 chars):\n${rawText.slice(0, 500)}`,
+      };
+    }
   }
 
   // Ensure it's an array

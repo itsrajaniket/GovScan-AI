@@ -138,6 +138,7 @@ export async function checkEligibility({
         generationConfig: {
           temperature: 0.1, // Low temperature for factual extraction
           maxOutputTokens: 8192,
+          responseMimeType: "application/json",
         },
       });
 
