@@ -121,54 +121,64 @@ export async function checkEligibility({
     throw new Error('Either pdfBuffer or textContent must be provided.');
   }
 
-  // Robust retry with exponential backoff for transient errors (503 Service Unavailable / 429 Rate Limit)
+  // Robust retry with model fallback for high-demand spikes (503 Service Unavailable)
+  const candidateModels = [model];
+  if (!candidateModels.includes('gemini-3.5-flash-lite')) candidateModels.push('gemini-3.5-flash-lite');
+  if (!candidateModels.includes('gemini-3.5-flash')) candidateModels.push('gemini-3.5-flash');
+
   let lastError;
-  const maxRetries = 3;
 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      if (attempt > 0) {
-        const delay = attempt * 8000;
-        console.log(`⏳ Retry attempt ${attempt}/${maxRetries} after ${delay / 1000}s backoff...`);
-        await new Promise(r => setTimeout(r, delay));
+  for (const currentModel of candidateModels) {
+    const genModel = genAI.getGenerativeModel({ model: currentModel });
+
+    for (let attempt = 0; attempt <= 2; attempt++) {
+      try {
+        if (attempt > 0) {
+          const delay = attempt * 5000;
+          console.log(`⏳ Retry attempt ${attempt}/2 on ${currentModel} after ${delay / 1000}s backoff...`);
+          await new Promise(r => setTimeout(r, delay));
+        }
+
+        const result = await genModel.generateContent({
+          contents: [{ role: 'user', parts }],
+          generationConfig: {
+            temperature: 0.1, // Low temperature for factual extraction
+            maxOutputTokens: 8192,
+            responseMimeType: "application/json",
+          },
+        });
+
+        // Increment counter AFTER successful call
+        incrementCounter();
+
+        const response = result.response;
+        const rawText = response.text();
+
+        // Extract token usage
+        const usage = response.usageMetadata || {};
+        const tokensUsed = (usage.promptTokenCount || 0) + (usage.candidatesTokenCount || 0);
+
+        return {
+          raw: rawText,
+          tokensUsed,
+          modelUsed: currentModel,
+        };
+      } catch (err) {
+        lastError = err;
+        const isTransient = err.message.includes('503') ||
+          err.message.includes('429') ||
+          err.message.includes('high demand') ||
+          err.message.includes('overloaded') ||
+          err.message.includes('fetch failed');
+
+        if (!isTransient) {
+          throw err;
+        }
+        console.warn(`⚠️ Transient API error on ${currentModel} (attempt ${attempt + 1}): ${err.message.slice(0, 100)}`);
       }
-
-      const result = await genModel.generateContent({
-        contents: [{ role: 'user', parts }],
-        generationConfig: {
-          temperature: 0.1, // Low temperature for factual extraction
-          maxOutputTokens: 8192,
-          responseMimeType: "application/json",
-        },
-      });
-
-      // Increment counter AFTER successful call
-      incrementCounter();
-
-      const response = result.response;
-      const rawText = response.text();
-
-      // Extract token usage
-      const usage = response.usageMetadata || {};
-      const tokensUsed = (usage.promptTokenCount || 0) + (usage.candidatesTokenCount || 0);
-
-      return {
-        raw: rawText,
-        tokensUsed,
-        modelUsed: model,
-      };
-    } catch (err) {
-      lastError = err;
-      const isTransient = err.message.includes('503') ||
-        err.message.includes('429') ||
-        err.message.includes('high demand') ||
-        err.message.includes('overloaded');
-
-      if (!isTransient || attempt === maxRetries) {
-        throw err;
-      }
-      console.warn(`⚠️ Transient API error (attempt ${attempt + 1}/${maxRetries + 1}): ${err.message}`);
     }
+
+    console.warn(`🔄 Model ${currentModel} overloaded. Falling back to alternative model...`);
   }
 
   throw lastError;

@@ -137,8 +137,13 @@ async function main() {
   let mimeType = doc.mimeType;
 
   if (doc.type === 'pdf') {
-    // Always send PDF as buffer — Gemini handles both text and scanned PDFs
-    pdfBuffer = doc.buffer;
+    if (doc.isScanned || !doc.text || doc.text.trim().length < 200) {
+      console.log('🖼️  Scanned image PDF detected — sending via Gemini vision...');
+      pdfBuffer = doc.buffer;
+    } else {
+      console.log(`📝 Text PDF detected (${doc.text.length} chars) — sending extracted text for fast & reliable evaluation...`);
+      textContent = doc.text;
+    }
   } else {
     // For DOCX, HTML, text — send extracted text
     textContent = doc.text;

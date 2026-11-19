@@ -32,11 +32,11 @@
     {
       "id": "isro",
       "name": "ISRO (Indian Space Research Organisation)",
-      "career_url": "TO_BE_VERIFIED",
-      "css_selector": "TO_BE_VERIFIED",
-      "enabled": false,
+      "career_url": "https://www.isro.gov.in/Careers.html",
+      "css_selector": "table, .content, main",
+      "enabled": true,
       "tier_hint": 1,
-      "notes": "Hires Scientists/Engineers. Verify URL at https://www.isro.gov.in/careers.html"
+      "notes": "Hires Scientists/Engineers, Technical Assistants, Scientific Assistants. Verified active URL."
     },
     {
       "id": "bel",

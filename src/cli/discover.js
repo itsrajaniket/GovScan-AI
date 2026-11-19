@@ -140,8 +140,12 @@ async function main() {
       continue;
     }
 
+    const isTextPdf = doc.type === 'pdf' && !doc.isScanned && doc.text && doc.text.trim().length >= 200;
+    const pdfBuffer = (doc.type === 'pdf' && !isTextPdf) ? doc.buffer : null;
+    const textContent = (doc.type !== 'pdf' || isTextPdf) ? doc.text : null;
+
     // Check eligibility with Gemini
-    console.log(`   🤖 Evaluating eligibility via Gemini...`);
+    console.log(`   🤖 Evaluating eligibility via Gemini (${isTextPdf ? 'text mode' : doc.type})...`);
     try {
       const geminiRes = await checkEligibility({
         apiKey: config.gemini.apiKey,
@@ -149,8 +153,8 @@ async function main() {
         dailyLimit: config.gemini.dailyLimit,
         promptTemplate: config.promptTemplate,
         profileJson: config.profileJson,
-        pdfBuffer: doc.type === 'pdf' ? doc.buffer : null,
-        textContent: doc.type !== 'pdf' ? doc.text : null,
+        pdfBuffer,
+        textContent,
         mimeType: doc.mimeType,
       });
 

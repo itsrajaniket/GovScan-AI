@@ -97,10 +97,22 @@ async function main() {
     process.exit(1);
   }
 
-  // 3. Send to Gemini
+  // 3. Send to Gemini (prefer extracted text for text-based PDFs to save tokens & prevent 503s; use Vision only for scanned PDFs)
   printSection('Analyzing eligibility via Gemini');
-  let pdfBuffer = doc.type === 'pdf' ? doc.buffer : null;
-  let textContent = doc.type !== 'pdf' ? doc.text : null;
+  let pdfBuffer = null;
+  let textContent = null;
+
+  if (doc.type === 'pdf') {
+    if (doc.isScanned || !doc.text || doc.text.trim().length < 200) {
+      console.log('🖼️  Scanned image PDF detected — sending as image to Gemini vision...');
+      pdfBuffer = doc.buffer;
+    } else {
+      console.log(`📝 Text PDF detected (${doc.text.length} chars) — sending extracted text for fast & reliable evaluation...`);
+      textContent = doc.text;
+    }
+  } else {
+    textContent = doc.text;
+  }
 
   console.log('⏳ Evaluating against your profile...');
   const result = await checkEligibility({
