@@ -1,5 +1,10 @@
 // src/cli/dashboard.js
-// Generates a self-contained interactive local HTML dashboard to filter and inspect jobs.
+// Generates a self-contained interactive local HTML dashboard to filter, track, and inspect jobs.
+// Upgraded with:
+// 1. Real-Time Live Countdown & Deadline Action Center (Timeline view & Priority banner)
+// 2. Candidate Match Visualizer (Why You Qualify: Degree, Age with OBC relaxation, Experience/Freshers)
+// 3. 1-Click Action Hub (Direct Apply, Official Notice, Copy Summary)
+//
 // Usage: node src/cli/dashboard.js [--open]
 
 import fs from 'fs';
@@ -24,10 +29,79 @@ function computeDaysLeft(isoDate) {
   }
 }
 
+/**
+ * Determine candidate qualification match chips based on job data and profile.
+ */
+function analyzeCandidateMatch(job) {
+  const text = `${job.post_name || ''} ${job.qualification_clause || ''} ${job.reasoning || ''}`.toLowerCase();
+  
+  // 1. Degree Match
+  let degreeMatch = 'Graduate / Relevant Degree';
+  let degreeConfidence = 'medium';
+  if (text.includes('electronics') || text.includes('ece') || text.includes('communication')) {
+    degreeMatch = '🎓 M.Sc Electronics & Comm (78.9%)';
+    degreeConfidence = 'high';
+  } else if (text.includes('physics')) {
+    degreeMatch = '🎓 B.Sc (Hons) Physics (63.1%)';
+    degreeConfidence = 'high';
+  } else if (text.includes('computer') || text.includes('mca') || text.includes('it') || text.includes('software')) {
+    degreeMatch = '🎓 PGDCA / MCA (Pursuing)';
+    degreeConfidence = 'medium';
+  } else if (job.tier === 3) {
+    degreeMatch = '🎓 Any Graduate (B.Sc / M.Sc)';
+    degreeConfidence = 'high';
+  }
+
+  // 2. Age Check (DOB 23-03-1999 -> Current Age: 27)
+  const candidateAge = 27;
+  let ageMatch = '🎂 Age 27 (OBC-NCL Relaxed)';
+  let ageEligible = true;
+  if (job.max_age_for_my_category) {
+    const maxAge = Number(job.max_age_for_my_category);
+    if (!isNaN(maxAge)) {
+      if (candidateAge <= maxAge) {
+        ageMatch = `🎂 Age 27 / Max ${maxAge} (OBC +3y Eligible)`;
+        ageEligible = true;
+      } else {
+        ageMatch = `🎂 Age 27 > Max ${maxAge} (Exceeded)`;
+        ageEligible = false;
+      }
+    }
+  }
+
+  // 3. Experience Check
+  const flags = Array.isArray(job.flags) ? job.flags : (typeof job.flags === 'string' ? JSON.parse(job.flags || '[]') : []);
+  const needsExp = flags.includes('experience_required') || text.includes('years experience') || text.includes('minimum experience');
+  const expMatch = needsExp ? '⚠️ Experience Proof Needed' : '💼 Freshers OK (0 Yrs Exp)';
+
+  // 4. Equivalence / Review Note
+  let reviewNote = null;
+  if (job.status === 'Manual Review') {
+    if (text.includes('b.e') || text.includes('b.tech')) {
+      reviewNote = '🔍 Check if M.Sc Electronics is accepted equivalent to B.Tech ECE';
+    } else if (text.includes('mca')) {
+      reviewNote = '🔍 Lateral Entry MCA status / Final year check';
+    } else {
+      reviewNote = '🔍 Review notification qualification clause carefully';
+    }
+  }
+
+  return {
+    degreeMatch,
+    degreeConfidence,
+    ageMatch,
+    ageEligible,
+    expMatch,
+    needsExp,
+    reviewNote,
+  };
+}
+
 async function generateDashboardHtml(jobs, stats) {
-  // Augment jobs with display fields and days left
+  // Augment jobs with display fields, countdowns, and match analysis
   const enrichedJobs = jobs.map(j => {
     const daysLeft = computeDaysLeft(j.last_date);
+    const match = analyzeCandidateMatch(j);
     return {
       ...j,
       display_last_date: formatDateToDisplay(j.last_date),
@@ -36,6 +110,7 @@ async function generateDashboardHtml(jobs, stats) {
       is_urgent: daysLeft !== null && daysLeft >= 0 && daysLeft <= 2,
       is_expiring_soon: daysLeft !== null && daysLeft >= 0 && daysLeft <= 7,
       is_expired: daysLeft !== null && daysLeft < 0,
+      candidate_match: match,
     };
   });
 
@@ -46,9 +121,9 @@ async function generateDashboardHtml(jobs, stats) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GovScan AI — Personal Job Radar</title>
+  <title>GovScan AI — Personal Government Job Radar</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #0b0f19;
@@ -66,7 +141,14 @@ async function generateDashboardHtml(jobs, stats) {
       --badge-eligible: #059669;
       --badge-review: #d97706;
       --badge-not-eligible: #dc2626;
-      --tag-bg: #1e293b;
+      --chip-degree: rgba(16, 185, 129, 0.15);
+      --chip-degree-text: #34d399;
+      --chip-age: rgba(59, 130, 246, 0.15);
+      --chip-age-text: #60a5fa;
+      --chip-exp: rgba(168, 85, 247, 0.15);
+      --chip-exp-text: #c084fc;
+      --chip-review: rgba(245, 158, 11, 0.15);
+      --chip-review-text: #fbbf24;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -74,10 +156,11 @@ async function generateDashboardHtml(jobs, stats) {
       background: var(--bg);
       color: var(--text);
       line-height: 1.5;
-      padding: 24px;
+      padding: 24px 16px;
       min-height: 100vh;
     }
-    .container { max-width: 1400px; margin: 0 auto; }
+    .container { max-width: 1440px; margin: 0 auto; }
+
     header {
       display: flex;
       justify-content: space-between;
@@ -88,49 +171,91 @@ async function generateDashboardHtml(jobs, stats) {
       flex-wrap: wrap;
       gap: 16px;
     }
-    .brand { display: flex; align-items: center; gap: 12px; }
-    .brand h1 { font-size: 24px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
-    .brand .subtitle { color: var(--text-muted); font-size: 13px; margin-top: 2px; }
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .brand h1 { font-size: 26px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+    .brand .subtitle { color: var(--text-muted); font-size: 13px; margin-top: 3px; }
+    .profile-pill {
+      background: #1e293b;
+      border: 1px solid #334155;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      color: #94a3b8;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .profile-pill strong { color: #f1f5f9; }
     .timestamp { font-size: 12px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
 
     /* Stats Grid */
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
     }
     .stat-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 12px;
-      padding: 16px 20px;
+      padding: 16px 18px;
       display: flex;
       flex-direction: column;
       gap: 4px;
       transition: transform 0.15s ease, border-color 0.15s ease;
     }
     .stat-card:hover { transform: translateY(-2px); border-color: #374151; }
-    .stat-label { font-size: 13px; color: var(--text-muted); font-weight: 500; }
-    .stat-val { font-size: 28px; font-weight: 700; color: #fff; }
+    .stat-label { font-size: 12px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-val { font-size: 26px; font-weight: 800; color: #fff; }
     .stat-val.t1 { color: var(--tier1); }
     .stat-val.review { color: var(--badge-review); }
     .stat-val.urgent { color: #f87171; }
 
-    /* Category Tabs */
+    /* Priority Action Center (Expiring Soon Banner) */
+    .action-center {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(245, 158, 11, 0.1));
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+    .action-center-left { display: flex; align-items: center; gap: 14px; }
+    .action-icon { font-size: 26px; }
+    .action-title { font-size: 15px; font-weight: 700; color: #fca5a5; }
+    .action-desc { font-size: 13px; color: #e2e8f0; margin-top: 2px; }
+    .action-btn-urgent {
+      background: #ef4444;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .action-btn-urgent:hover { background: #dc2626; }
+
+    /* 4-Category Switcher Tabs */
     .category-tabs {
       display: flex;
-      gap: 12px;
-      margin-bottom: 20px;
+      gap: 10px;
+      margin-bottom: 18px;
       flex-wrap: wrap;
     }
     .cat-tab {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       color: var(--text-muted);
-      padding: 12px 20px;
+      padding: 10px 18px;
       border-radius: 10px;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       display: flex;
@@ -143,91 +268,148 @@ async function generateDashboardHtml(jobs, stats) {
       background: #1e3a8a;
       border-color: #3b82f6;
       color: #fff;
-      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
+      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.25);
     }
     .tab-count {
       background: rgba(0,0,0,0.4);
-      padding: 2px 8px;
-      border-radius: 12px;
-      font-size: 12px;
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-size: 11px;
       font-family: 'JetBrains Mono', monospace;
     }
 
-    /* Filter Controls */
+    /* Filter & View Switcher Bar */
     .controls {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 24px;
+      padding: 14px 18px;
+      margin-bottom: 20px;
       display: flex;
-      flex-wrap: wrap;
+      flex-direction: column;
       gap: 12px;
+    }
+    .controls-top {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
       align-items: center;
     }
     .search-box {
-      flex: 1 1 260px;
+      flex: 1 1 320px;
       position: relative;
     }
     .search-box input {
       width: 100%;
-      background: #0f172a;
-      border: 1px solid #334155;
-      color: #fff;
-      padding: 10px 14px;
+      background: #0b0f19;
+      border: 1px solid #374151;
       border-radius: 8px;
-      font-size: 14px;
+      padding: 10px 14px 10px 36px;
+      color: #fff;
+      font-size: 13px;
       outline: none;
       transition: border-color 0.15s;
     }
-    .search-box input:focus { border-color: var(--primary); }
-    .filter-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    select {
-      background: #0f172a;
-      border: 1px solid #334155;
-      color: #fff;
-      padding: 10px 12px;
+    .search-box input:focus { border-color: #3b82f6; }
+    .search-box::before {
+      content: '🔍';
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 13px;
+      opacity: 0.6;
+    }
+
+    .view-toggle {
+      display: flex;
+      background: #0b0f19;
+      border: 1px solid #374151;
       border-radius: 8px;
+      padding: 3px;
+      gap: 4px;
+    }
+    .view-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .view-btn.active {
+      background: #1e293b;
+      color: #fff;
+    }
+
+    .controls-bottom {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .filter-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    select {
+      background: #0b0f19;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      color: var(--text);
+      padding: 8px 12px;
       font-size: 13px;
       outline: none;
       cursor: pointer;
     }
-    select:focus { border-color: var(--primary); }
+    select:focus { border-color: #3b82f6; }
+
     .btn {
-      background: var(--primary);
-      color: #fff;
-      padding: 10px 16px;
+      padding: 8px 14px;
       border-radius: 8px;
-      border: none;
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
-      text-decoration: none;
+      border: none;
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      transition: background 0.15s;
+      transition: all 0.15s ease;
     }
-    .btn:hover { background: var(--primary-hover); }
     .btn-outline {
-      background: transparent;
+      background: #1e293b;
       border: 1px solid #334155;
-      color: var(--text);
+      color: #93c5fd;
     }
-    .btn-outline:hover { background: #1e293b; }
+    .btn-outline:hover { background: #334155; color: #fff; }
 
-    /* Job Cards List */
+    .counter-tag {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Jobs Cards Grid */
     .jobs-list {
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
     }
     .job-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 12px;
-      padding: 20px;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      padding: 18px 22px;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
       position: relative;
     }
     .job-card:hover { border-color: #38bdf8; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
@@ -241,14 +423,14 @@ async function generateDashboardHtml(jobs, stats) {
       justify-content: space-between;
       align-items: flex-start;
       gap: 16px;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
       flex-wrap: wrap;
     }
-    .post-info { flex: 1 1 300px; }
+    .post-info { flex: 1 1 320px; }
     .org-title {
       font-size: 13px;
       text-transform: uppercase;
-      font-weight: 600;
+      font-weight: 700;
       color: #38bdf8;
       letter-spacing: 0.5px;
       margin-bottom: 4px;
@@ -288,6 +470,40 @@ async function generateDashboardHtml(jobs, stats) {
     .badge-review { background: rgba(217, 119, 6, 0.25); color: #f59e0b; border: 1px solid #f59e0b; }
     .badge-not-eligible { background: rgba(220, 38, 38, 0.25); color: #ef4444; border: 1px solid #ef4444; }
 
+    /* Candidate Match Visualizer Row */
+    .match-chips-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin: 10px 0 12px 0;
+      padding: 8px 12px;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+    }
+    .match-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin-right: 4px;
+      letter-spacing: 0.5px;
+    }
+    .match-chip {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .chip-degree { background: var(--chip-degree); color: var(--chip-degree-text); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .chip-age { background: var(--chip-age); color: var(--chip-age-text); border: 1px solid rgba(59, 130, 246, 0.3); }
+    .chip-exp { background: var(--chip-exp); color: var(--chip-exp-text); border: 1px solid rgba(168, 85, 247, 0.3); }
+    .chip-review { background: var(--chip-review); color: var(--chip-review-text); border: 1px solid rgba(245, 158, 11, 0.3); }
+
     /* Metadata pills row */
     .meta-row {
       display: flex;
@@ -295,22 +511,50 @@ async function generateDashboardHtml(jobs, stats) {
       gap: 16px;
       font-size: 13px;
       color: #cbd5e1;
-      margin: 12px 0;
+      margin: 10px 0;
       padding: 10px 0;
       border-top: 1px solid #1e293b;
       border-bottom: 1px solid #1e293b;
     }
     .meta-item { display: flex; align-items: center; gap: 6px; }
     .meta-item strong { color: #fff; }
-    .deadline-urgent { color: #f87171; font-weight: 700; }
-    .deadline-active { color: #34d399; font-weight: 600; }
-    .deadline-expired { color: #64748b; text-decoration: line-through; }
+
+    /* Live Countdown Display */
+    .countdown-urgent {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid #ef4444;
+      color: #fca5a5;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      animation: pulse 2s infinite;
+    }
+    .countdown-active {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid #10b981;
+      color: #6ee7b7;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+    .countdown-expired {
+      color: #64748b;
+      text-decoration: line-through;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
 
     .flags-row {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
-      margin: 10px 0;
+      margin: 8px 0;
     }
     .flag-tag {
       background: #1e1b4b;
@@ -322,6 +566,7 @@ async function generateDashboardHtml(jobs, stats) {
       font-family: 'JetBrains Mono', monospace;
     }
 
+    /* Accordion Details */
     .accordion-btn {
       background: none;
       border: none;
@@ -352,9 +597,13 @@ async function generateDashboardHtml(jobs, stats) {
       border-left: 3px solid var(--primary);
       padding-left: 12px;
       margin-bottom: 10px;
+      background: rgba(59, 130, 246, 0.05);
+      padding: 8px 12px;
+      border-radius: 0 6px 6px 0;
     }
     .reasoning-box { color: #cbd5e1; line-height: 1.6; }
 
+    /* Card Footer & Action Hub */
     .card-footer {
       display: flex;
       justify-content: space-between;
@@ -363,21 +612,79 @@ async function generateDashboardHtml(jobs, stats) {
       flex-wrap: wrap;
       gap: 12px;
     }
-    .links-group { display: flex; gap: 10px; }
-    .link-btn {
+    .action-links { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .btn-apply-primary {
+      background: #2563eb;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      padding: 7px 14px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s ease;
+    }
+    .btn-apply-primary:hover { background: #1d4ed8; color: #fff; }
+    .btn-notice-secondary {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #93c5fd;
       font-size: 12px;
       font-weight: 600;
-      color: #60a5fa;
       text-decoration: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .btn-notice-secondary:hover { background: #334155; color: #fff; }
+    .btn-copy {
+      background: none;
+      border: 1px solid #374151;
+      color: var(--text-muted);
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      padding: 6px 12px;
-      background: #1e293b;
-      border-radius: 6px;
-      transition: background 0.15s;
+      transition: all 0.15s ease;
     }
-    .link-btn:hover { background: #334155; color: #fff; }
+    .btn-copy:hover { color: #fff; border-color: #64748b; }
+
+    /* Timeline Section Styles */
+    .timeline-bucket {
+      margin-bottom: 24px;
+    }
+    .timeline-bucket-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #1e293b;
+    }
+    .timeline-bucket-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .timeline-bucket-count {
+      background: #1e293b;
+      color: #94a3b8;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+    }
 
     .no-results {
       text-align: center;
@@ -387,10 +694,21 @@ async function generateDashboardHtml(jobs, stats) {
       border-radius: 12px;
       border: 1px dashed var(--card-border);
     }
-    .counter-tag {
+
+    /* Toast Notification */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #10b981;
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 8px;
       font-size: 13px;
-      color: var(--text-muted);
-      margin-left: auto;
+      font-weight: 600;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+      display: none;
+      z-index: 1000;
     }
   </style>
 </head>
@@ -400,8 +718,15 @@ async function generateDashboardHtml(jobs, stats) {
       <div class="brand">
         <div>
           <h1>🛰️ GovScan AI</h1>
-          <div class="subtitle">Personal Government Job Radar & Eligibility Dashboard</div>
+          <div class="subtitle">Personal Government Job Radar & Eligibility Mission Control</div>
         </div>
+      </div>
+      <div class="profile-pill">
+        <span>👤 <strong>Aniket Raj</strong></span>
+        <span>•</span>
+        <span>M.Sc Electronics (78.9%) | B.Sc Physics (63.1%)</span>
+        <span>•</span>
+        <span>OBC-NCL (Central)</span>
       </div>
       <div class="timestamp">Generated: ${generatedAt}</div>
     </header>
@@ -409,31 +734,43 @@ async function generateDashboardHtml(jobs, stats) {
     <!-- Stats Overview -->
     <div class="stats-grid">
       <div class="stat-card">
-        <span class="stat-label">Total Jobs Detected</span>
+        <span class="stat-label">Total Jobs Discovered</span>
         <span class="stat-val" id="stat-total">${stats.total}</span>
       </div>
       <div class="stat-card">
-        <span class="stat-label">🟢 Tier 1 Relevant</span>
+        <span class="stat-label">🟢 Tier 1 High Relevant</span>
         <span class="stat-val t1" id="stat-t1">${stats.byTier[1] || 0}</span>
       </div>
       <div class="stat-card">
-        <span class="stat-label">✅ Eligible Posts</span>
-        <span class="stat-val" style="color:#10b981;" id="stat-eligible">${stats.byStatus['Eligible'] || 0}</span>
+        <span class="stat-label">✅ Ready to Apply (Open)</span>
+        <span class="stat-val" style="color:#10b981;" id="stat-eligible">0</span>
       </div>
       <div class="stat-card">
         <span class="stat-label">🔍 Manual Review Pending</span>
-        <span class="stat-val review" id="stat-review">${stats.byStatus['Manual Review'] || 0}</span>
+        <span class="stat-val review" id="stat-review">0</span>
       </div>
       <div class="stat-card">
-        <span class="stat-label">⏰ Deadlines in 7 Days</span>
+        <span class="stat-label">🚨 Deadlines in 7 Days</span>
         <span class="stat-val urgent" id="stat-urgent">0</span>
       </div>
     </div>
 
-    <!-- 1-Click Quick Category Switcher Tabs -->
+    <!-- Priority Action Center Banner (shown if eligible/review jobs closing soon) -->
+    <div class="action-center" id="actionCenter" style="display:none;">
+      <div class="action-center-left">
+        <div class="action-icon">🚨</div>
+        <div>
+          <div class="action-title" id="actionTitle">Urgent Deadlines Approaching!</div>
+          <div class="action-desc" id="actionDesc">You have active job opportunities closing in the next few days. Review and apply before portals close.</div>
+        </div>
+      </div>
+      <button class="action-btn-urgent" onclick="filterClosingSoon()">View Urgent Opportunities &rarr;</button>
+    </div>
+
+    <!-- 4-Category Switcher Tabs -->
     <div class="category-tabs">
       <button class="cat-tab active" id="tab-ready" onclick="selectCategoryTab('ready_to_apply', this)">
-        🟢 Where I Can Apply (Open & Eligible) <span class="tab-count" id="count-ready">0</span>
+        🟢 Where I Can Apply (Open &amp; Eligible) <span class="tab-count" id="count-ready">0</span>
       </button>
       <button class="cat-tab" id="tab-review" onclick="selectCategoryTab('manual_review', this)">
         🔍 Needs Manual Review <span class="tab-count" id="count-review">0</span>
@@ -446,58 +783,70 @@ async function generateDashboardHtml(jobs, stats) {
       </button>
     </div>
 
-    <!-- Filter & Search Controls -->
+    <!-- Controls & View Mode Bar -->
     <div class="controls">
-      <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Search post, org, advt, skill, location...">
+      <div class="controls-top">
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="Search post title, organisation, qualification clause, location...">
+        </div>
+
+        <div class="view-toggle">
+          <button class="view-btn active" id="btnViewGrid" onclick="setViewMode('grid')">🗂️ Cards</button>
+          <button class="view-btn" id="btnViewTimeline" onclick="setViewMode('timeline')">📅 Timeline</button>
+        </div>
       </div>
 
-      <div class="filter-group">
-        <select id="tierFilter">
-          <option value="all">All Tiers</option>
-          <option value="1">🟢 Tier 1 (Exact Match)</option>
-          <option value="2">🔵 Tier 2 (Technical/Equivalent)</option>
-          <option value="3">🟡 Tier 3 (Any Graduate)</option>
-          <option value="4">🔴 Tier 4 (Unrelated)</option>
-        </select>
+      <div class="controls-bottom">
+        <div class="filter-group">
+          <select id="tierFilter">
+            <option value="all">All Tiers</option>
+            <option value="1">🟢 Tier 1 (Exact Match)</option>
+            <option value="2">🔵 Tier 2 (Technical/Equivalent)</option>
+            <option value="3">🟡 Tier 3 (Any Graduate)</option>
+            <option value="4">🔴 Tier 4 (Unrelated)</option>
+          </select>
 
-        <select id="statusFilter">
-          <option value="all">All Eligibility</option>
-          <option value="Eligible">✅ Eligible</option>
-          <option value="Manual Review">🔍 Manual Review</option>
-          <option value="Not Eligible">❌ Not Eligible</option>
-        </select>
+          <select id="statusFilter">
+            <option value="all">All Eligibility</option>
+            <option value="Eligible">✅ Eligible</option>
+            <option value="Manual Review">🔍 Manual Review</option>
+            <option value="Not Eligible">❌ Not Eligible</option>
+          </select>
 
-        <select id="deadlineFilter">
-          <option value="all">All Deadlines</option>
-          <option value="soon">⏰ Expiring Soon (&le; 7 days)</option>
-          <option value="active">Active (Not Expired)</option>
-          <option value="expired">Expired</option>
-        </select>
+          <select id="deadlineFilter">
+            <option value="all">All Deadlines</option>
+            <option value="urgent">🚨 Closing &le; 2 Days</option>
+            <option value="soon">⏰ Closing &le; 7 Days</option>
+            <option value="active">Active (Open)</option>
+            <option value="expired">Expired</option>
+          </select>
 
-        <select id="sortOrder">
-          <option value="tier_asc">Sort: Tier (1 &rarr; 4)</option>
-          <option value="deadline_asc">Sort: Deadline (Earliest)</option>
-          <option value="newest">Sort: Newest First</option>
-          <option value="org_asc">Sort: Organization (A-Z)</option>
-        </select>
+          <select id="sortOrder">
+            <option value="deadline_asc">Sort: Deadline (Earliest First)</option>
+            <option value="tier_asc">Sort: Tier (1 &rarr; 4)</option>
+            <option value="newest">Sort: Newest First</option>
+            <option value="org_asc">Sort: Organisation (A-Z)</option>
+          </select>
 
-        <button class="btn btn-outline" id="exportBtn" onclick="exportExcel()">📥 Export Multi-Tab Excel</button>
-        <button class="btn btn-outline" id="exportCsvBtn" onclick="exportFilteredCsv()">📄 CSV</button>
+          <button class="btn btn-outline" id="exportBtn" onclick="exportExcel()">📥 Excel Workbook</button>
+        </div>
+
+        <span class="counter-tag" id="visibleCounter">Showing ${enrichedJobs.length} jobs</span>
       </div>
-
-      <span class="counter-tag" id="visibleCounter">Showing ${enrichedJobs.length} jobs</span>
     </div>
 
-    <!-- Jobs Cards Container -->
-    <div class="jobs-list" id="jobsList"></div>
+    <!-- Jobs Container (Cards / Timeline) -->
+    <div id="jobsContainer"></div>
   </div>
+
+  <div id="toast">Copied to clipboard!</div>
 
   <script>
     const allJobs = ${JSON.stringify(enrichedJobs)};
     let activeCategory = 'ready_to_apply';
+    let currentViewMode = 'grid'; // 'grid' | 'timeline'
 
-    // Calculate category counts
+    // Compute live category counts
     const readyJobs = allJobs.filter(j => j.status === 'Eligible' && !j.is_expired);
     const reviewJobs = allJobs.filter(j => j.status === 'Manual Review' && !j.is_expired);
     const expiredJobs = allJobs.filter(j => j.is_expired);
@@ -507,9 +856,26 @@ async function generateDashboardHtml(jobs, stats) {
     document.getElementById('count-expired').innerText = expiredJobs.length;
     document.getElementById('count-all').innerText = allJobs.length;
 
-    // Calculate urgent count
-    const urgentCount = allJobs.filter(j => j.is_expiring_soon).length;
-    document.getElementById('stat-urgent').innerText = urgentCount;
+    document.getElementById('stat-eligible').innerText = readyJobs.length;
+    document.getElementById('stat-review').innerText = reviewJobs.length;
+
+    // Check urgent jobs
+    const urgentActionable = allJobs.filter(j => (j.status === 'Eligible' || j.status === 'Manual Review') && j.is_expiring_soon);
+    document.getElementById('stat-urgent').innerText = urgentActionable.length;
+
+    if (urgentActionable.length > 0) {
+      const banner = document.getElementById('actionCenter');
+      banner.style.display = 'flex';
+      document.getElementById('actionTitle').innerText = '🚨 ' + urgentActionable.length + ' Actionable Opportunity(ies) Closing in &le; 7 Days!';
+      document.getElementById('actionDesc').innerText = 'Deadlines are approaching soon for positions matching your qualifications. Click below to inspect them.';
+    }
+
+    function setViewMode(mode) {
+      currentViewMode = mode;
+      document.getElementById('btnViewGrid').classList.toggle('active', mode === 'grid');
+      document.getElementById('btnViewTimeline').classList.toggle('active', mode === 'timeline');
+      filterJobs();
+    }
 
     function selectCategoryTab(category, btn) {
       activeCategory = category;
@@ -518,89 +884,132 @@ async function generateDashboardHtml(jobs, stats) {
       filterJobs();
     }
 
-    function renderJobs(jobs) {
-      const list = document.getElementById('jobsList');
-      const counter = document.getElementById('visibleCounter');
-      counter.innerText = 'Showing ' + jobs.length + ' of ' + allJobs.length + ' jobs';
+    function filterClosingSoon() {
+      selectCategoryTab('ready_to_apply', document.getElementById('tab-ready'));
+      document.getElementById('deadlineFilter').value = 'soon';
+      filterJobs();
+    }
 
-      if (jobs.length === 0) {
-        list.innerHTML = '<div class="no-results"><h3>No matching jobs found</h3><p style="margin-top:6px;">Try clearing filters or search terms.</p></div>';
-        return;
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.innerText = msg;
+      t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, 2200);
+    }
+
+    function copyJobSummary(job) {
+      const lines = [
+        '📋 Post: ' + job.post_name,
+        '🏢 Organisation: ' + job.organisation,
+        '📅 Last Date: ' + (job.display_last_date || 'Not Stated'),
+        '💰 Pay: ' + (job.pay || 'N/A'),
+        '🔗 Apply: ' + (job.official_apply_url || job.official_notification_url || 'N/A')
+      ];
+      navigator.clipboard.writeText(lines.join('\\n')).then(() => {
+        showToast('Job summary copied to clipboard!');
+      }).catch(() => {
+        showToast('Copied!');
+      });
+    }
+
+    function renderJobCard(job) {
+      const tierClass = 'tier-' + job.tier;
+      const tierBadgeClass = 'badge-t' + job.tier;
+      const statusBadgeClass = job.status === 'Eligible' ? 'badge-eligible' : (job.status === 'Manual Review' ? 'badge-review' : 'badge-not-eligible');
+
+      let deadlineBadge = '';
+      if (job.last_date) {
+        if (job.is_expired) {
+          deadlineBadge = '<span class="countdown-expired">Expired: ' + job.display_last_date + '</span>';
+        } else if (job.days_left === 0) {
+          deadlineBadge = '<span class="countdown-urgent">🚨 CLOSING TODAY!</span>';
+        } else if (job.days_left === 1) {
+          deadlineBadge = '<span class="countdown-urgent">🚨 CLOSING TOMORROW!</span>';
+        } else if (job.days_left <= 7) {
+          deadlineBadge = '<span class="countdown-urgent">⏰ ' + job.display_last_date + ' (' + job.days_left + ' days left)</span>';
+        } else {
+          deadlineBadge = '<span class="countdown-active">⏰ ' + job.display_last_date + ' (' + job.days_left + ' days left)</span>';
+        }
+      } else {
+        deadlineBadge = '<span>No deadline specified</span>';
       }
 
-      list.innerHTML = jobs.map(job => {
-        const tierClass = 'tier-' + job.tier;
-        const tierBadgeClass = 'badge-t' + job.tier;
-        const statusBadgeClass = job.status === 'Eligible' ? 'badge-eligible' : (job.status === 'Manual Review' ? 'badge-review' : 'badge-not-eligible');
+      const match = job.candidate_match || {};
+      const matchChips = [
+        '<span class="match-chip chip-degree">' + escapeHtml(match.degreeMatch || 'Qualifications Verified') + '</span>',
+        '<span class="match-chip chip-age">' + escapeHtml(match.ageMatch || 'Age Verified') + '</span>',
+        '<span class="match-chip chip-exp">' + escapeHtml(match.expMatch || 'Experience Checked') + '</span>',
+      ];
+      if (match.reviewNote) {
+        matchChips.push('<span class="match-chip chip-review">' + escapeHtml(match.reviewNote) + '</span>');
+      }
 
-        let deadlineBadge = '';
-        if (job.last_date) {
-          if (job.is_expired) {
-            deadlineBadge = '<span class="deadline-expired">Expired: ' + job.display_last_date + '</span>';
-          } else if (job.is_urgent) {
-            deadlineBadge = '<span class="deadline-urgent">🚨 ' + job.display_last_date + ' (' + (job.days_left === 0 ? 'TODAY!' : job.days_left + ' days left') + ')</span>';
-          } else {
-            deadlineBadge = '<span class="deadline-active">⏰ ' + job.display_last_date + ' (' + job.days_left + ' days left)</span>';
-          }
-        } else {
-          deadlineBadge = '<span>No deadline specified</span>';
-        }
+      const flagsHtml = (job.flags && job.flags.length > 0)
+        ? '<div class="flags-row">' + job.flags.map(f => '<span class="flag-tag">⚠️ ' + escapeHtml(f) + '</span>').join('') + '</div>'
+        : '';
 
-        const flagsHtml = (job.flags && job.flags.length > 0)
-          ? '<div class="flags-row">' + job.flags.map(f => '<span class="flag-tag">⚠️ ' + f + '</span>').join('') + '</div>'
-          : '';
+      const jobJsonStr = JSON.stringify(job).replace(/"/g, '&quot;');
 
-        return \`
-          <div class="job-card \${tierClass}">
-            <div class="card-header">
-              <div class="post-info">
-                <div class="org-title">\${escapeHtml(job.organisation)}</div>
-                <div class="post-name">\${escapeHtml(job.post_name)}</div>
-                \${job.advertisement_no ? \`<div class="advt-code">Advt: \${escapeHtml(job.advertisement_no)} \${job.post_code ? ' | Post Code: ' + escapeHtml(job.post_code) : ''}</div>\` : ''}
-              </div>
-              <div class="badges">
-                <span class="badge \${tierBadgeClass}">Tier \${job.tier}</span>
-                <span class="badge \${statusBadgeClass}">\${job.status}</span>
-              </div>
+      return \`
+        <div class="job-card \${tierClass}">
+          <div class="card-header">
+            <div class="post-info">
+              <div class="org-title">\${escapeHtml(job.organisation)}</div>
+              <div class="post-name">\${escapeHtml(job.post_name)}</div>
+              \${job.advertisement_no ? \`<div class="advt-code">Advt No: \${escapeHtml(job.advertisement_no)} \${job.post_code ? ' | Post Code: ' + escapeHtml(job.post_code) : ''}</div>\` : ''}
             </div>
-
-            <div class="meta-row">
-              \${job.pay ? \`<div class="meta-item">💰 <strong>\${escapeHtml(job.pay)}</strong> (\${escapeHtml(job.employment_type || 'N/A')})</div>\` : ''}
-              \${job.location ? \`<div class="meta-item">📍 <strong>\${escapeHtml(job.location)}</strong></div>\` : ''}
-              \${job.vacancies_count ? \`<div class="meta-item">👥 Vacancies: <strong>\${job.vacancies_count}</strong></div>\` : ''}
-              <div class="meta-item">📅 Last Date: \${deadlineBadge}</div>
-              \${job.max_age_for_my_category ? \`<div class="meta-item">🎂 Max Age (OBC): <strong>\${job.max_age_for_my_category} yrs</strong></div>\` : ''}
-            </div>
-
-            \${flagsHtml}
-
-            <button class="accordion-btn" onclick="toggleDetails(this)">
-              <span>▶ Details & Reasoning</span>
-            </button>
-            <div class="accordion-content">
-              \${job.qualification_clause ? \`<div class="clause-box"><strong>Qualification Clause (Page \${job.page_number || 'N/A'}):</strong><br>"\${escapeHtml(job.qualification_clause)}"</div>\` : ''}
-              \${job.reasoning ? \`<div class="reasoning-box"><strong>Gemini Assessment:</strong><br>\${escapeHtml(job.reasoning)}</div>\` : ''}
-            </div>
-
-            <div class="card-footer">
-              <div class="links-group">
-                \${job.official_notification_url ? \`<a href="\${job.official_notification_url}" target="_blank" class="link-btn">📄 Official Notice</a>\` : ''}
-                \${job.official_apply_url ? \`<a href="\${job.official_apply_url}" target="_blank" class="link-btn">🔗 Apply Portal</a>\` : ''}
-              </div>
-              <div style="font-size:12px; color:var(--text-muted);">
-                First Detected: \${job.date_first_detected || 'N/A'}
-              </div>
+            <div class="badges">
+              <span class="badge \${tierBadgeClass}">Tier \${job.tier}</span>
+              <span class="badge \${statusBadgeClass}">\${job.status}</span>
             </div>
           </div>
-        \`;
-      }).join('');
+
+          <!-- Candidate Match Visualizer -->
+          <div class="match-chips-row">
+            <span class="match-label">Your Match:</span>
+            \${matchChips.join('')}
+          </div>
+
+          <!-- Metadata row -->
+          <div class="meta-row">
+            \${job.pay ? \`<div class="meta-item">💰 <strong>\${escapeHtml(job.pay)}</strong> (\${escapeHtml(job.employment_type || 'N/A')})</div>\` : ''}
+            \${job.location ? \`<div class="meta-item">📍 <strong>\${escapeHtml(job.location)}</strong></div>\` : ''}
+            \${job.vacancies_count ? \`<div class="meta-item">👥 Vacancies: <strong>\${job.vacancies_count}</strong></div>\` : ''}
+            <div class="meta-item">📅 Last Date: \${deadlineBadge}</div>
+            \${job.fee ? \`<div class="meta-item">💳 Fee: <strong>\${escapeHtml(job.fee)}</strong></div>\` : ''}
+          </div>
+
+          \${flagsHtml}
+
+          <!-- Details Accordion -->
+          <button class="accordion-btn" onclick="toggleDetails(this)">
+            <span>▶ View Eligibility Reasoning &amp; Notification Clause</span>
+          </button>
+          <div class="accordion-content">
+            \${job.qualification_clause ? \`<div class="clause-box"><strong>Official Notification Clause (Page \${job.page_number || 'N/A'}):</strong><br>"\${escapeHtml(job.qualification_clause)}"</div>\` : ''}
+            \${job.reasoning ? \`<div class="reasoning-box"><strong>Gemini AI Evaluation:</strong><br>\${escapeHtml(job.reasoning)}</div>\` : ''}
+          </div>
+
+          <!-- Action Hub -->
+          <div class="card-footer">
+            <div class="action-links">
+              \${job.official_apply_url ? \`<a href="\${job.official_apply_url}" target="_blank" class="btn-apply-primary">🚀 Apply Online Portal</a>\` : ''}
+              \${job.official_notification_url ? \`<a href="\${job.official_notification_url}" target="_blank" class="btn-notice-secondary">📄 Official Notification PDF</a>\` : ''}
+              <button class="btn-copy" onclick='copyJobSummary(\${jobJsonStr})'>📋 Copy Details</button>
+            </div>
+            <div style="font-size:12px; color:var(--text-muted); font-family:'JetBrains Mono', monospace;">
+              Detected: \${job.date_first_detected || 'N/A'}
+            </div>
+          </div>
+        </div>
+      \`;
     }
 
     function toggleDetails(btn) {
       const content = btn.nextElementSibling;
       const isOpen = content.classList.contains('show');
       content.classList.toggle('show');
-      btn.querySelector('span').innerText = isOpen ? '▶ Details & Reasoning' : '▼ Hide Details';
+      btn.querySelector('span').innerText = isOpen ? '▶ View Eligibility Reasoning & Notification Clause' : '▼ Hide Eligibility Details';
     }
 
     function escapeHtml(str) {
@@ -609,6 +1018,66 @@ async function generateDashboardHtml(jobs, stats) {
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
+    }
+
+    function renderTimelineView(jobs) {
+      const container = document.getElementById('jobsContainer');
+      if (jobs.length === 0) {
+        container.innerHTML = '<div class="no-results"><h3>No matching jobs found</h3><p style="margin-top:6px;">Try clearing filters or search terms.</p></div>';
+        return;
+      }
+
+      // Group into timeline buckets
+      const buckets = {
+        urgent: { title: '🚨 Closing in &le; 48 Hours', jobs: [] },
+        this_week: { title: '⏰ Closing This Week (3 to 7 Days)', jobs: [] },
+        this_month: { title: '🗓️ Closing in 8 to 30 Days', jobs: [] },
+        future: { title: '📆 Future Deadlines (> 30 Days)', jobs: [] },
+        no_deadline: { title: '⏳ Ongoing / Date Not Stated', jobs: [] },
+        expired: { title: '⌛ Past Deadlines (Closed)', jobs: [] }
+      };
+
+      for (const job of jobs) {
+        if (job.is_expired) {
+          buckets.expired.jobs.push(job);
+        } else if (job.days_left !== null) {
+          if (job.days_left <= 2) buckets.urgent.jobs.push(job);
+          else if (job.days_left <= 7) buckets.this_week.jobs.push(job);
+          else if (job.days_left <= 30) buckets.this_month.jobs.push(job);
+          else buckets.future.jobs.push(job);
+        } else {
+          buckets.no_deadline.jobs.push(job);
+        }
+      }
+
+      let html = '';
+      for (const key of ['urgent', 'this_week', 'this_month', 'future', 'no_deadline', 'expired']) {
+        const b = buckets[key];
+        if (b.jobs.length > 0) {
+          html += \`
+            <div class="timeline-bucket">
+              <div class="timeline-bucket-header">
+                <div class="timeline-bucket-title">\${b.title}</div>
+                <div class="timeline-bucket-count">\${b.jobs.length}</div>
+              </div>
+              <div class="jobs-list">
+                \${b.jobs.map(j => renderJobCard(j)).join('')}
+              </div>
+            </div>
+          \`;
+        }
+      }
+
+      container.innerHTML = html;
+    }
+
+    function renderGridView(jobs) {
+      const container = document.getElementById('jobsContainer');
+      if (jobs.length === 0) {
+        container.innerHTML = '<div class="no-results"><h3>No matching jobs found</h3><p style="margin-top:6px;">Try clearing filters or search terms.</p></div>';
+        return;
+      }
+      container.innerHTML = '<div class="jobs-list">' + jobs.map(j => renderJobCard(j)).join('') + '</div>';
     }
 
     function filterJobs() {
@@ -648,7 +1117,8 @@ async function generateDashboardHtml(jobs, stats) {
         if (status !== 'all' && j.status !== status) return false;
 
         // Deadline
-        if (deadline === 'soon' && !j.is_expiring_soon) return false;
+        if (deadline === 'urgent' && (!j.is_urgent || j.is_expired)) return false;
+        if (deadline === 'soon' && (!j.is_expiring_soon || j.is_expired)) return false;
         if (deadline === 'active' && j.is_expired) return false;
         if (deadline === 'expired' && !j.is_expired) return false;
 
@@ -668,15 +1138,17 @@ async function generateDashboardHtml(jobs, stats) {
         return 0;
       });
 
-      renderJobs(filtered);
+      document.getElementById('visibleCounter').innerText = 'Showing ' + filtered.length + ' of ' + allJobs.length + ' jobs';
+
+      if (currentViewMode === 'timeline') {
+        renderTimelineView(filtered);
+      } else {
+        renderGridView(filtered);
+      }
     }
 
     function exportExcel() {
       window.location.href = '../exports/GovScan_Job_Report_' + new Date().toISOString().slice(0, 10) + '.xlsx';
-    }
-
-    function exportFilteredCsv() {
-      window.location.href = '../exports/govscan_export_' + new Date().toISOString().slice(0, 10) + '.csv';
     }
 
     document.getElementById('searchInput').addEventListener('input', filterJobs);
