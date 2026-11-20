@@ -1038,20 +1038,65 @@ async function generateDashboardHtml(jobs, stats) {
       setTimeout(() => { t.style.display = 'none'; }, 2200);
     }
 
-    function copyJobSummary(job) {
+    function copyJobSummary(jobId) {
+      const job = allJobs.find(j => j.id === jobId) || allJobs[jobId];
+      if (!job) return;
+
       const lines = [
         '📋 Post: ' + job.post_name,
         '🏢 Organisation: ' + job.organisation,
-        '📡 Source: ' + (job.portal_name || 'Official'),
-        '📅 Last Date: ' + (job.display_last_date || 'Not Stated'),
-        '💰 Pay: ' + (job.pay || 'N/A'),
-        '🔗 Apply: ' + (job.official_apply_url || job.official_notification_url || 'N/A')
       ];
-      navigator.clipboard.writeText(lines.join('\\n')).then(() => {
-        showToast('Job summary copied to clipboard!');
-      }).catch(() => {
-        showToast('Copied!');
-      });
+
+      if (job.advertisement_no) {
+        lines.push('📌 Advt / Notification No: ' + job.advertisement_no);
+      }
+      if (job.post_code) {
+        lines.push('🔢 Post Code: ' + job.post_code);
+      }
+
+      lines.push('🎯 Eligibility: ' + job.status + ' (Tier ' + job.tier + ')');
+      lines.push('📅 Last Date: ' + (job.display_last_date || 'Not Stated') + (job.days_left !== null ? (job.days_left < 0 ? ' (Expired)' : ' (' + job.days_left + ' days left)') : ''));
+
+      if (job.pay) lines.push('💰 Pay / Salary: ' + job.pay + (job.employment_type ? ' (' + job.employment_type + ')' : ''));
+      if (job.vacancies_count) lines.push('👥 Vacancies: ' + job.vacancies_count);
+      if (job.location) lines.push('📍 Location: ' + job.location);
+      if (job.candidate_match && job.candidate_match.degreeMatch) lines.push('🎓 Match: ' + job.candidate_match.degreeMatch);
+      if (job.official_notification_url) lines.push('📄 Official Notification: ' + job.official_notification_url);
+      if (job.official_apply_url) lines.push('🚀 Apply Online Portal: ' + job.official_apply_url);
+
+      const textToCopy = lines.join('\n');
+
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(textToCopy).then(() => {
+          showToast('Job details & Advt No copied!');
+        }).catch(() => {
+          fallbackCopy(textToCopy);
+        });
+      } else {
+        fallbackCopy(textToCopy);
+      }
+    }
+
+    function fallbackCopy(text) {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-9999px';
+      textArea.style.top = '0';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          showToast('Job details & Advt No copied!');
+        } else {
+          showToast('Failed to copy');
+        }
+      } catch (err) {
+        showToast('Could not copy');
+      }
+      document.body.removeChild(textArea);
     }
 
     function renderJobCard(job) {
@@ -1089,8 +1134,6 @@ async function generateDashboardHtml(jobs, stats) {
       const flagsHtml = (job.flags && job.flags.length > 0)
         ? '<div class="flags-row">' + job.flags.map(f => '<span class="flag-tag">⚠️ ' + escapeHtml(f) + '</span>').join('') + '</div>'
         : '';
-
-      const jobJsonStr = JSON.stringify(job).replace(/"/g, '&quot;');
 
       return \`
         <div class="job-card \${tierClass}">
@@ -1140,7 +1183,7 @@ async function generateDashboardHtml(jobs, stats) {
             <div class="action-links">
               \${job.official_apply_url ? \`<a href="\${job.official_apply_url}" target="_blank" class="btn-apply-primary">🚀 Apply Online Portal</a>\` : ''}
               \${job.official_notification_url ? \`<a href="\${job.official_notification_url}" target="_blank" class="btn-notice-secondary">📄 Official Notification PDF</a>\` : ''}
-              <button class="btn-copy" onclick='copyJobSummary(\${jobJsonStr})'>📋 Copy Details</button>
+              <button class="btn-copy" onclick="copyJobSummary(${job.id})">📋 Copy Details</button>
             </div>
             <div style="font-size:12px; color:var(--text-muted); font-family:'JetBrains Mono', monospace;">
               Detected: \${job.date_first_detected || 'N/A'}
