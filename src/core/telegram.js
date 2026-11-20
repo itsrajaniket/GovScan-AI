@@ -2,10 +2,49 @@
 // Telegram Bot API client — sends alerts and reports.
 // Uses the Telegram Bot HTTP API directly (no extra dependency).
 
+import fs from 'fs';
+import path from 'path';
 import { getConfig } from './config.js';
 import { formatDateToDisplay } from './database.js';
 
 const API_BASE = 'https://api.telegram.org/bot';
+
+/**
+ * Send a document/file (e.g. Excel spreadsheet) via Telegram.
+ */
+export async function sendDocument(filePath, caption = '') {
+  const config = getConfig();
+  const token = config.settings?.telegram?.bot_token || process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = config.settings?.telegram?.chat_id || process.env.TELEGRAM_CHAT_ID;
+
+  if (!token || !chatId) {
+    console.warn('⚠️ Telegram not configured. Skipping document send.');
+    return null;
+  }
+
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`File not found: ${filePath}`);
+  }
+
+  const fileBuffer = fs.readFileSync(filePath);
+  const fileName = path.basename(filePath);
+
+  const form = new FormData();
+  form.append('chat_id', chatId);
+  if (caption) form.append('caption', caption);
+  form.append('document', new Blob([fileBuffer]), fileName);
+
+  const response = await fetch(`${API_BASE}${token}/sendDocument`, {
+    method: 'POST',
+    body: form,
+  });
+
+  const result = await response.json();
+  if (!result.ok) {
+    throw new Error(`Telegram sendDocument error: ${result.description}`);
+  }
+  return result;
+}
 
 /**
  * Send a text message via Telegram.

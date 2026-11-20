@@ -15,7 +15,7 @@ import { fileURLToPath } from 'url';
 import { spawn } from 'child_process';
 import { getConfig } from '../core/config.js';
 import { getDB, closeDB } from '../core/database.js';
-import { sendMessage } from '../core/telegram.js';
+import { sendMessage, sendDocument } from '../core/telegram.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..', '..');
@@ -135,6 +135,27 @@ async function main() {
     console.log('\n--- Step 4: Refreshing Local Dashboard & Excel Export ---');
     await runScript('src/cli/dashboard.js');
     await runScript('src/cli/export-excel.js');
+
+    // Keep docs/index.html updated for GitHub Pages
+    const dashPath = path.join(ROOT, 'data', 'dashboard.html');
+    const docsDir = path.join(ROOT, 'docs');
+    fs.mkdirSync(docsDir, { recursive: true });
+    if (fs.existsSync(dashPath)) {
+      fs.copyFileSync(dashPath, path.join(docsDir, 'index.html'));
+      console.log(`🌐 Updated docs/index.html for GitHub Pages.`);
+    }
+
+    // Send latest Excel report to Telegram
+    const excelFilename = `GovScan_Job_Report_${todayStr}.xlsx`;
+    const excelFilePath = path.join(ROOT, 'data', 'exports', excelFilename);
+    if (fs.existsSync(excelFilePath)) {
+      try {
+        await sendDocument(excelFilePath, `📊 GovScan AI — Daily Job Report (${todayStr})\nIncludes all 4 tabs: Ready to Apply, Manual Review, Expired, and Archive.`);
+        console.log(`📱 Sent Excel report directly to Telegram.`);
+      } catch (docErr) {
+        console.warn(`Could not send Excel document: ${docErr.message}`);
+      }
+    }
 
     console.log('\n' + '='.repeat(65));
     console.log(`✅ GovScan AI — Daily Run Completed Successfully [${new Date().toISOString()}]`);
