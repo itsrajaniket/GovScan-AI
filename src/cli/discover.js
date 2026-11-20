@@ -218,10 +218,13 @@ async function main() {
         }
       }
 
-      // Send Telegram alerts
+      // Send Telegram alerts (only for actionable: Eligible/Manual Review and not expired)
       if (postsToAlert.length > 0) {
-        await sendJobAlerts(postsToAlert);
-        console.log(`   📱 Sent alerts for ${postsToAlert.length} post(s).`);
+        const alertResults = await sendJobAlerts(postsToAlert);
+        const actuallySent = alertResults.filter(r => r.sent).length;
+        if (actuallySent > 0) {
+          console.log(`   📱 Sent Telegram alerts for ${actuallySent} actionable post(s).`);
+        }
       }
 
       processedCount++;

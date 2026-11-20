@@ -73,3 +73,16 @@ All architectural and design decisions, logged in order.
 ### D016 — Local HTML Dashboard Architecture (T5.3)
 **Date:** 2026-11-19
 **Why:** Built a zero-dependency standalone HTML dashboard generator (`src/cli/dashboard.js`, outputting `data/dashboard.html`). It inlines the SQLite database records into a single file with client-side reactive filtering (by Tier, Eligibility Status, Deadline status, and free-text search across posts/orgs/qualifications/reasoning). Also wired into `daily-run.js` so it automatically regenerates every morning.
+
+### D017 — Categorized Multi-Tab Excel Export & Synchronized Dashboard Tabs
+**Date:** 2026-11-20
+**Why:** Built `src/cli/export-excel.js` (npm script `npm run excel`) using `xlsx` to generate a structured workbook at `data/exports/GovScan_Job_Report_YYYY-MM-DD.xlsx` with 4 dedicated sheets:
+1. `1_Ready_To_Apply` (Eligible + Deadline Open)
+2. `2_Manual_Review` (Borderline / Equivalence Review + Deadline Open)
+3. `3_Expired_Deadlines` (Jobs past last_date)
+4. `4_All_Jobs_Archive` (Complete historical record)
+Updated `data/dashboard.html` with matching 1-click category switcher tabs. Wired both into Step 4 of `src/cli/daily-run.js` for daily automated updates.
+
+### D018 — Sarkari Result Discovery Indexer & Actionable-Only Telegram Alerts
+**Date:** 2026-11-20
+**Why:** Integrated Sarkari Result (`https://www.sarkariresult.com/latestjob/`) via `src/core/sarkari-result.js` into `discover.js`. Strictly adheres to personal radar rules: aggregator pages are hints only; the official `.gov.in`/PSU notification document is extracted and evaluated by Gemini. Updated Telegram alert dispatch rules in `src/core/telegram.js` to silence "Not Eligible" and expired notices, ensuring Telegram messages remain 100% actionable.
