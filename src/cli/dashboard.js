@@ -1064,7 +1064,7 @@ async function generateDashboardHtml(jobs, stats) {
       if (job.official_notification_url) lines.push('📄 Official Notification: ' + job.official_notification_url);
       if (job.official_apply_url) lines.push('🚀 Apply Online Portal: ' + job.official_apply_url);
 
-      const textToCopy = lines.join('\n');
+      const textToCopy = lines.join('\\n');
 
       if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(textToCopy).then(() => {
@@ -1183,7 +1183,7 @@ async function generateDashboardHtml(jobs, stats) {
             <div class="action-links">
               \${job.official_apply_url ? \`<a href="\${job.official_apply_url}" target="_blank" class="btn-apply-primary">🚀 Apply Online Portal</a>\` : ''}
               \${job.official_notification_url ? \`<a href="\${job.official_notification_url}" target="_blank" class="btn-notice-secondary">📄 Official Notification PDF</a>\` : ''}
-              <button class="btn-copy" onclick="copyJobSummary(${job.id})">📋 Copy Details</button>
+              <button class="btn-copy" onclick="copyJobSummary(\${job.id})">📋 Copy Details</button>
             </div>
             <div style="font-size:12px; color:var(--text-muted); font-family:'JetBrains Mono', monospace;">
               Detected: \${job.date_first_detected || 'N/A'}
