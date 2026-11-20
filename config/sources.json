@@ -59,6 +59,17 @@
     }
   ],
 
+  "aggregators": [
+    {
+      "id": "sarkari_result",
+      "name": "Sarkari Result Latest Jobs",
+      "index_url": "https://www.sarkariresult.com/latestjob/",
+      "enabled": true,
+      "limit": 3,
+      "notes": "Scrapes latest job postings to discover official government notification PDFs and apply portals."
+    }
+  ],
+
   "phase_5_expansion": [
     "ECIL", "DRDO/CEPTAM", "SAMEER", "BIS", "STPI", "AAI", "BHEL",
     "IIT/NIT/Central University non-teaching", "MPSEDC",

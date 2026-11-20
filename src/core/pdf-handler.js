@@ -156,6 +156,10 @@ function handleText(buffer, hash, result) {
   return result;
 }
 
+import https from 'https';
+
+const sslAgent = new https.Agent({ rejectUnauthorized: false });
+
 /**
  * Fetch a URL and save to data/notices/.
  * Returns the local file path, or throws if the download fails.
@@ -164,6 +168,7 @@ export async function downloadNotice(url, noticesDir) {
   const fetch = (await import('node-fetch')).default;
 
   const response = await fetch(url, {
+    agent: sslAgent,
     headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       'Accept': 'text/html,application/pdf,application/xhtml+xml,*/*',

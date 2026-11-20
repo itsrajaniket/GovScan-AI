@@ -117,6 +117,42 @@ async function generateDashboardHtml(jobs, stats) {
     .stat-val.review { color: var(--badge-review); }
     .stat-val.urgent { color: #f87171; }
 
+    /* Category Tabs */
+    .category-tabs {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .cat-tab {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+    .cat-tab:hover { background: var(--card-hover); color: #fff; border-color: #3b82f6; }
+    .cat-tab.active {
+      background: #1e3a8a;
+      border-color: #3b82f6;
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
+    }
+    .tab-count {
+      background: rgba(0,0,0,0.4);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
     /* Filter Controls */
     .controls {
       background: var(--card-bg);
@@ -394,6 +430,22 @@ async function generateDashboardHtml(jobs, stats) {
       </div>
     </div>
 
+    <!-- 1-Click Quick Category Switcher Tabs -->
+    <div class="category-tabs">
+      <button class="cat-tab active" id="tab-ready" onclick="selectCategoryTab('ready_to_apply', this)">
+        🟢 Where I Can Apply (Open & Eligible) <span class="tab-count" id="count-ready">0</span>
+      </button>
+      <button class="cat-tab" id="tab-review" onclick="selectCategoryTab('manual_review', this)">
+        🔍 Needs Manual Review <span class="tab-count" id="count-review">0</span>
+      </button>
+      <button class="cat-tab" id="tab-expired" onclick="selectCategoryTab('expired', this)">
+        ⏰ Expired / Closed Deadlines <span class="tab-count" id="count-expired">0</span>
+      </button>
+      <button class="cat-tab" id="tab-all" onclick="selectCategoryTab('all', this)">
+        📁 Full Archive (All Posts) <span class="tab-count" id="count-all">0</span>
+      </button>
+    </div>
+
     <!-- Filter & Search Controls -->
     <div class="controls">
       <div class="search-box">
@@ -430,7 +482,8 @@ async function generateDashboardHtml(jobs, stats) {
           <option value="org_asc">Sort: Organization (A-Z)</option>
         </select>
 
-        <button class="btn btn-outline" id="exportBtn" onclick="exportFilteredCsv()">📥 Export CSV</button>
+        <button class="btn btn-outline" id="exportBtn" onclick="exportExcel()">📥 Export Multi-Tab Excel</button>
+        <button class="btn btn-outline" id="exportCsvBtn" onclick="exportFilteredCsv()">📄 CSV</button>
       </div>
 
       <span class="counter-tag" id="visibleCounter">Showing ${enrichedJobs.length} jobs</span>
@@ -442,10 +495,28 @@ async function generateDashboardHtml(jobs, stats) {
 
   <script>
     const allJobs = ${JSON.stringify(enrichedJobs)};
+    let activeCategory = 'ready_to_apply';
+
+    // Calculate category counts
+    const readyJobs = allJobs.filter(j => j.status === 'Eligible' && !j.is_expired);
+    const reviewJobs = allJobs.filter(j => j.status === 'Manual Review' && !j.is_expired);
+    const expiredJobs = allJobs.filter(j => j.is_expired);
+
+    document.getElementById('count-ready').innerText = readyJobs.length;
+    document.getElementById('count-review').innerText = reviewJobs.length;
+    document.getElementById('count-expired').innerText = expiredJobs.length;
+    document.getElementById('count-all').innerText = allJobs.length;
 
     // Calculate urgent count
     const urgentCount = allJobs.filter(j => j.is_expiring_soon).length;
     document.getElementById('stat-urgent').innerText = urgentCount;
+
+    function selectCategoryTab(category, btn) {
+      activeCategory = category;
+      document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      filterJobs();
+    }
 
     function renderJobs(jobs) {
       const list = document.getElementById('jobsList');
@@ -548,6 +619,15 @@ async function generateDashboardHtml(jobs, stats) {
       const sort = document.getElementById('sortOrder').value;
 
       let filtered = allJobs.filter(j => {
+        // Category Tab Filter
+        if (activeCategory === 'ready_to_apply') {
+          if (j.status !== 'Eligible' || j.is_expired) return false;
+        } else if (activeCategory === 'manual_review') {
+          if (j.status !== 'Manual Review' || j.is_expired) return false;
+        } else if (activeCategory === 'expired') {
+          if (!j.is_expired) return false;
+        }
+
         // Search
         if (q) {
           const hay = (
@@ -589,6 +669,10 @@ async function generateDashboardHtml(jobs, stats) {
       });
 
       renderJobs(filtered);
+    }
+
+    function exportExcel() {
+      window.location.href = '../exports/GovScan_Job_Report_' + new Date().toISOString().slice(0, 10) + '.xlsx';
     }
 
     function exportFilteredCsv() {

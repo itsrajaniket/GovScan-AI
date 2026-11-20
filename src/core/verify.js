@@ -48,7 +48,15 @@ export function isOfficialDomain(urlStr) {
  * }
  */
 export function verifyNoticeCandidate(text = '', url = '') {
-  const normalized = (text + ' ' + url).toLowerCase();
+  // Extract path from url so domain names (e.g. sarkariresult.com) don't falsely trigger skip keywords
+  let pathOnly = url;
+  try {
+    const parsed = new URL(url);
+    pathOnly = parsed.pathname;
+  } catch {}
+
+  const textNormalized = text.toLowerCase();
+  const fullNormalized = `${textNormalized} ${pathOnly.toLowerCase()}`;
   const config = getConfig();
 
   const skipKeywords = config.settings?.pipeline?.verify_keywords_skip || [
@@ -62,22 +70,33 @@ export function verifyNoticeCandidate(text = '', url = '') {
     'corrigendum', 'addendum', 'amendment', 'erratum', 'extension of last date', 'date extension'
   ];
 
-  // 1. Check for skip keywords
+  // 1. Check for skip keywords with word boundary support for single words
   for (const kw of skipKeywords) {
-    // Word boundary or phrase check
-    if (normalized.includes(kw)) {
-      return {
-        isVacancy: false,
-        isCorrigendum: false,
-        skipReason: `Matched skip keyword: "${kw}"`,
-        confidence: 'high',
-      };
+    if (!kw.includes(' ')) {
+      const regex = new RegExp(`\\b${kw}s?\\b`, 'i');
+      if (regex.test(fullNormalized)) {
+        return {
+          isVacancy: false,
+          isCorrigendum: false,
+          skipReason: `Matched skip keyword: "${kw}"`,
+          confidence: 'high',
+        };
+      }
+    } else {
+      if (fullNormalized.includes(kw)) {
+        return {
+          isVacancy: false,
+          isCorrigendum: false,
+          skipReason: `Matched skip keyword: "${kw}"`,
+          confidence: 'high',
+        };
+      }
     }
   }
 
   // 2. Check for corrigendum keywords
   for (const kw of corrigendumKeywords) {
-    if (normalized.includes(kw)) {
+    if (fullNormalized.includes(kw)) {
       return {
         isVacancy: true,
         isCorrigendum: true,
@@ -91,10 +110,11 @@ export function verifyNoticeCandidate(text = '', url = '') {
   const vacancyKeywords = [
     'recruitment', 'engagement', 'vacancy', 'vacancies', 'advertisement',
     'advt', 'notification', 'project engineer', 'scientist', 'technical assistant',
-    'apprentice', 'officer', 'assistant', 'walk-in', 'contract basis', 'applications are invited'
+    'apprentice', 'officer', 'assistant', 'walk-in', 'contract basis', 'applications are invited',
+    'online form', 'post', 'trainee', 'faculty', 'executive', 'engineer'
   ];
 
-  const matchedPositive = vacancyKeywords.some(kw => normalized.includes(kw));
+  const matchedPositive = vacancyKeywords.some(kw => fullNormalized.includes(kw));
 
   // If link is directly to a PDF and doesn't match skip keywords, likely a notification
   const isPdf = url.toLowerCase().endsWith('.pdf');

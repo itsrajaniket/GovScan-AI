@@ -131,9 +131,10 @@ async function main() {
     console.log('\n--- Step 3: Discovery Engine ---');
     await runScript('src/cli/discover.js');
 
-    // Step 4: Refresh Local HTML Dashboard
-    console.log('\n--- Step 4: Refreshing Local Dashboard ---');
+    // Step 4: Refresh Local HTML Dashboard & Multi-Tab Excel Workbook
+    console.log('\n--- Step 4: Refreshing Local Dashboard & Excel Export ---');
     await runScript('src/cli/dashboard.js');
+    await runScript('src/cli/export-excel.js');
 
     console.log('\n' + '='.repeat(65));
     console.log(`✅ GovScan AI — Daily Run Completed Successfully [${new Date().toISOString()}]`);

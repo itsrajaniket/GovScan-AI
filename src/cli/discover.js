@@ -13,6 +13,7 @@ import { fileURLToPath } from 'url';
 import { getConfig } from '../core/config.js';
 import { checkSource } from '../core/watcher.js';
 import { fetchAndFilterRss } from '../core/rss.js';
+import { fetchSarkariResultNotices } from '../core/sarkari-result.js';
 import { downloadNotice, readDocument } from '../core/pdf-handler.js';
 import { checkEligibility, getCounterStats, canCallAPI } from '../core/gemini.js';
 import { parseAndValidate } from '../core/schema.js';
@@ -95,10 +96,41 @@ async function main() {
     }
   }
 
-  // ── Step 3: Process Discovered Candidates ──
-  printSection(`Processing Discovered Candidates (${discoveredItems.length})`);
+  // ── Step 3: Check Aggregators (Sarkari Result Hints) ──
+  printSection('Checking Aggregators (Sarkari Result)');
+  const aggregators = (sourcesData.aggregators || []).filter(a => a.enabled);
 
-  if (discoveredItems.length === 0) {
+  if (aggregators.length === 0) {
+    console.log('ℹ️  No aggregators enabled in config/sources.json.');
+  } else {
+    for (const agg of aggregators) {
+      if (agg.id === 'sarkari_result') {
+        console.log(`📡 Fetching aggregator notices from ${agg.name}...`);
+        try {
+          const notices = await fetchSarkariResultNotices(agg.limit || 10);
+          console.log(`   ✨ Found ${notices.length} official notice candidate(s) via ${agg.name}.`);
+          discoveredItems.push(...notices);
+        } catch (err) {
+          console.warn(`   ⚠️ Aggregator error (${agg.name}): ${err.message}`);
+        }
+      }
+    }
+  }
+
+  // ── Step 4: Process Discovered Candidates ──
+  // Deduplicate discovered items by URL
+  const uniqueItems = [];
+  const seenUrls = new Set();
+  for (const item of discoveredItems) {
+    if (item.url && !seenUrls.has(item.url)) {
+      seenUrls.add(item.url);
+      uniqueItems.push(item);
+    }
+  }
+
+  printSection(`Processing Discovered Candidates (${uniqueItems.length})`);
+
+  if (uniqueItems.length === 0) {
     console.log('✅ Discovery complete: No new notices found across active sources.');
     closeDB();
     return;
@@ -108,7 +140,7 @@ async function main() {
   let processedCount = 0;
   let newJobsCount = 0;
 
-  for (const item of discoveredItems) {
+  for (const item of uniqueItems) {
     if (!canCallAPI(config.gemini.dailyLimit)) {
       console.warn(`⚠️ Daily Gemini API call limit reached (${config.gemini.dailyLimit}). Halting discovery processing for today.`);
       break;
@@ -176,6 +208,7 @@ async function main() {
           source_type: item.source_type,
           local_pdf_path: filePath,
           official_notification_url: item.url,
+          official_apply_url: item.official_apply_url || post.official_apply_url || '',
         };
 
         const upsertRes = await upsertJob(postData);
@@ -200,7 +233,7 @@ async function main() {
   }
 
   printHeader('Discovery Summary');
-  console.log(`Candidates discovered: ${discoveredItems.length}`);
+  console.log(`Candidates discovered: ${uniqueItems.length}`);
   console.log(`Notices processed:    ${processedCount}`);
   console.log(`New jobs stored:       ${newJobsCount}`);
 

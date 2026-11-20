@@ -102,18 +102,31 @@ export function formatJobAlert(post) {
 
 /**
  * Send a job alert for posts matching tier rules.
- * Alert tiers: 1, 2, and any Manual Review.
+ * New Rule: ONLY alert if post is Eligible or Manual Review AND not expired!
+ * Prevents noisy alerts for posts the user cannot apply for.
  */
 export async function sendJobAlert(post) {
   const config = getConfig();
-  const alertTiers = config.settings?.telegram?.alert_tiers || [1, 2];
+  const alertTiers = config.settings?.telegram?.alert_tiers || [1, 2, 3];
   const alertManualReview = config.settings?.telegram?.alert_manual_review !== false;
 
-  const shouldAlert =
-    alertTiers.includes(post.tier) ||
-    (alertManualReview && post.status === 'Manual Review');
+  // Never alert for Not Eligible posts
+  if (post.status === 'Not Eligible') {
+    return null;
+  }
 
-  if (!shouldAlert) return null;
+  // Never alert for expired posts
+  const daysLeft = computeDaysLeft(post.last_date);
+  if (daysLeft !== null && daysLeft < 0) {
+    return null;
+  }
+
+  const isActionable = post.status === 'Eligible' || (alertManualReview && post.status === 'Manual Review');
+  const isTierAllowed = alertTiers.includes(post.tier);
+
+  if (!isActionable || !isTierAllowed) {
+    return null;
+  }
 
   const message = formatJobAlert(post);
   return sendMessage(message);
