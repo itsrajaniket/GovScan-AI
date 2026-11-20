@@ -3,7 +3,8 @@
 // Upgraded with:
 // 1. Real-Time Live Countdown & Deadline Action Center (Timeline view & Priority banner)
 // 2. Candidate Match Visualizer (Why You Qualify: Degree, Age with OBC relaxation, Experience/Freshers)
-// 3. 1-Click Action Hub (Direct Apply, Official Notice, Copy Summary)
+// 3. Interactive Portal / Source Breakdown Bar (ISRO, Sarkari Result Indexer, CDAC, etc.)
+// 4. 1-Click Action Hub (Direct Apply, Official Notice, Copy Summary)
 //
 // Usage: node src/cli/dashboard.js [--open]
 
@@ -97,11 +98,33 @@ function analyzeCandidateMatch(job) {
   };
 }
 
+/**
+ * Identify discovery portal and source name for a job.
+ */
+function getPortalSource(job) {
+  if (job.source_type === 'aggregator_official_pdf') {
+    return { id: 'sarkari_result', name: 'Sarkari Result Indexer', icon: '📰' };
+  }
+  const url = (job.official_notification_url || '').toLowerCase();
+  const org = (job.organisation || '').toLowerCase();
+  if (url.includes('isro.gov.in') || org.includes('isro') || org.includes('shar') || org.includes('ursc') || org.includes('istrac') || org.includes('lpsc') || org.includes('sac') || org.includes('hsfc')) {
+    return { id: 'isro', name: 'ISRO Careers Portal', icon: '🚀' };
+  }
+  if (url.includes('cdac.in') || org.includes('cdac')) {
+    return { id: 'cdac', name: 'CDAC Careers', icon: '💻' };
+  }
+  if (url.includes('nielit')) {
+    return { id: 'nielit', name: 'NIELIT Portal', icon: '⚡' };
+  }
+  return { id: 'other', name: 'Direct Official Notice', icon: '📄' };
+}
+
 async function generateDashboardHtml(jobs, stats) {
-  // Augment jobs with display fields, countdowns, and match analysis
+  // Augment jobs with display fields, countdowns, match analysis, and portal sources
   const enrichedJobs = jobs.map(j => {
     const daysLeft = computeDaysLeft(j.last_date);
     const match = analyzeCandidateMatch(j);
+    const portal = getPortalSource(j);
     return {
       ...j,
       display_last_date: formatDateToDisplay(j.last_date),
@@ -111,6 +134,9 @@ async function generateDashboardHtml(jobs, stats) {
       is_expiring_soon: daysLeft !== null && daysLeft >= 0 && daysLeft <= 7,
       is_expired: daysLeft !== null && daysLeft < 0,
       candidate_match: match,
+      portal_id: portal.id,
+      portal_name: portal.name,
+      portal_icon: portal.icon,
     };
   });
 
@@ -218,7 +244,7 @@ async function generateDashboardHtml(jobs, stats) {
       border: 1px solid rgba(239, 68, 68, 0.35);
       border-radius: 12px;
       padding: 16px 20px;
-      margin-bottom: 22px;
+      margin-bottom: 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -246,7 +272,7 @@ async function generateDashboardHtml(jobs, stats) {
     .category-tabs {
       display: flex;
       gap: 10px;
-      margin-bottom: 18px;
+      margin-bottom: 14px;
       flex-wrap: wrap;
     }
     .cat-tab {
@@ -273,6 +299,65 @@ async function generateDashboardHtml(jobs, stats) {
     .tab-count {
       background: rgba(0,0,0,0.4);
       padding: 2px 7px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Portal Breakdown Bar */
+    .portal-breakdown {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 12px 18px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .portal-header-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .portal-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .portal-pill {
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #94a3b8;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .portal-pill:hover {
+      background: #1e293b;
+      color: #fff;
+      border-color: #60a5fa;
+    }
+    .portal-pill.active {
+      background: #1e3a8a;
+      border-color: #3b82f6;
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(59, 130, 246, 0.3);
+    }
+    .portal-count {
+      background: rgba(0,0,0,0.4);
+      padding: 1px 7px;
       border-radius: 10px;
       font-size: 11px;
       font-family: 'JetBrains Mono', monospace;
@@ -427,13 +512,32 @@ async function generateDashboardHtml(jobs, stats) {
       flex-wrap: wrap;
     }
     .post-info { flex: 1 1 320px; }
+    .org-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 4px;
+    }
     .org-title {
       font-size: 13px;
       text-transform: uppercase;
       font-weight: 700;
       color: #38bdf8;
       letter-spacing: 0.5px;
-      margin-bottom: 4px;
+    }
+    .source-badge {
+      font-size: 11px;
+      font-weight: 600;
+      color: #94a3b8;
+      background: #1e293b;
+      border: 1px solid #334155;
+      padding: 2px 8px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
     }
     .post-name {
       font-size: 18px;
@@ -783,6 +887,25 @@ async function generateDashboardHtml(jobs, stats) {
       </button>
     </div>
 
+    <!-- Portal / Source Breakdown Bar (Interactive) -->
+    <div class="portal-breakdown">
+      <span class="portal-header-title">📡 Discovered by Portal:</span>
+      <div class="portal-pills">
+        <button class="portal-pill active" id="portal-all" onclick="selectPortal('all', this)">
+          🌐 All Sources <span class="portal-count" id="pcount-all">0</span>
+        </button>
+        <button class="portal-pill" id="portal-isro" onclick="selectPortal('isro', this)">
+          🚀 ISRO Careers <span class="portal-count" id="pcount-isro">0</span>
+        </button>
+        <button class="portal-pill" id="portal-sarkari" onclick="selectPortal('sarkari_result', this)">
+          📰 Sarkari Result Indexer <span class="portal-count" id="pcount-sarkari">0</span>
+        </button>
+        <button class="portal-pill" id="portal-cdac" onclick="selectPortal('cdac', this)">
+          💻 CDAC Careers <span class="portal-count" id="pcount-cdac">0</span>
+        </button>
+      </div>
+    </div>
+
     <!-- Controls & View Mode Bar -->
     <div class="controls">
       <div class="controls-top">
@@ -844,6 +967,7 @@ async function generateDashboardHtml(jobs, stats) {
   <script>
     const allJobs = ${JSON.stringify(enrichedJobs)};
     let activeCategory = 'ready_to_apply';
+    let activePortal = 'all';
     let currentViewMode = 'grid'; // 'grid' | 'timeline'
 
     // Compute live category counts
@@ -858,6 +982,16 @@ async function generateDashboardHtml(jobs, stats) {
 
     document.getElementById('stat-eligible').innerText = readyJobs.length;
     document.getElementById('stat-review').innerText = reviewJobs.length;
+
+    // Compute live portal counts
+    const isroCount = allJobs.filter(j => j.portal_id === 'isro').length;
+    const sarkariCount = allJobs.filter(j => j.portal_id === 'sarkari_result').length;
+    const cdacCount = allJobs.filter(j => j.portal_id === 'cdac').length;
+
+    document.getElementById('pcount-all').innerText = allJobs.length;
+    document.getElementById('pcount-isro').innerText = isroCount;
+    document.getElementById('pcount-sarkari').innerText = sarkariCount;
+    document.getElementById('pcount-cdac').innerText = cdacCount;
 
     // Check urgent jobs
     const urgentActionable = allJobs.filter(j => (j.status === 'Eligible' || j.status === 'Manual Review') && j.is_expiring_soon);
@@ -884,6 +1018,13 @@ async function generateDashboardHtml(jobs, stats) {
       filterJobs();
     }
 
+    function selectPortal(portalKey, btn) {
+      activePortal = portalKey;
+      document.querySelectorAll('.portal-pill').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      filterJobs();
+    }
+
     function filterClosingSoon() {
       selectCategoryTab('ready_to_apply', document.getElementById('tab-ready'));
       document.getElementById('deadlineFilter').value = 'soon';
@@ -901,6 +1042,7 @@ async function generateDashboardHtml(jobs, stats) {
       const lines = [
         '📋 Post: ' + job.post_name,
         '🏢 Organisation: ' + job.organisation,
+        '📡 Source: ' + (job.portal_name || 'Official'),
         '📅 Last Date: ' + (job.display_last_date || 'Not Stated'),
         '💰 Pay: ' + (job.pay || 'N/A'),
         '🔗 Apply: ' + (job.official_apply_url || job.official_notification_url || 'N/A')
@@ -954,7 +1096,10 @@ async function generateDashboardHtml(jobs, stats) {
         <div class="job-card \${tierClass}">
           <div class="card-header">
             <div class="post-info">
-              <div class="org-title">\${escapeHtml(job.organisation)}</div>
+              <div class="org-title-row">
+                <span class="org-title">\${escapeHtml(job.organisation)}</span>
+                <span class="source-badge">\${job.portal_icon} \${escapeHtml(job.portal_name)}</span>
+              </div>
               <div class="post-name">\${escapeHtml(job.post_name)}</div>
               \${job.advertisement_no ? \`<div class="advt-code">Advt No: \${escapeHtml(job.advertisement_no)} \${job.post_code ? ' | Post Code: ' + escapeHtml(job.post_code) : ''}</div>\` : ''}
             </div>
@@ -1088,6 +1233,9 @@ async function generateDashboardHtml(jobs, stats) {
       const sort = document.getElementById('sortOrder').value;
 
       let filtered = allJobs.filter(j => {
+        // Portal Source Filter
+        if (activePortal !== 'all' && j.portal_id !== activePortal) return false;
+
         // Category Tab Filter
         if (activeCategory === 'ready_to_apply') {
           if (j.status !== 'Eligible' || j.is_expired) return false;
@@ -1102,6 +1250,7 @@ async function generateDashboardHtml(jobs, stats) {
           const hay = (
             (j.post_name || '') + ' ' +
             (j.organisation || '') + ' ' +
+            (j.portal_name || '') + ' ' +
             (j.advertisement_no || '') + ' ' +
             (j.location || '') + ' ' +
             (j.qualification_clause || '') + ' ' +
