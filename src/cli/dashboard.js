@@ -873,7 +873,7 @@ async function generateDashboardHtml(jobs, stats) {
 
     <!-- 4-Category Switcher Tabs -->
     <div class="category-tabs">
-      <button class="cat-tab active" id="tab-ready" onclick="selectCategoryTab('ready_to_apply', this)">
+      <button class="cat-tab" id="tab-ready" onclick="selectCategoryTab('ready_to_apply', this)">
         🟢 Where I Can Apply (Open &amp; Eligible) <span class="tab-count" id="count-ready">0</span>
       </button>
       <button class="cat-tab" id="tab-review" onclick="selectCategoryTab('manual_review', this)">
@@ -882,7 +882,7 @@ async function generateDashboardHtml(jobs, stats) {
       <button class="cat-tab" id="tab-expired" onclick="selectCategoryTab('expired', this)">
         ⏰ Expired / Closed Deadlines <span class="tab-count" id="count-expired">0</span>
       </button>
-      <button class="cat-tab" id="tab-all" onclick="selectCategoryTab('all', this)">
+      <button class="cat-tab active" id="tab-all" onclick="selectCategoryTab('all', this)">
         📁 Full Archive (All Posts) <span class="tab-count" id="count-all">0</span>
       </button>
     </div>
@@ -952,6 +952,7 @@ async function generateDashboardHtml(jobs, stats) {
           </select>
 
           <button class="btn btn-outline" id="exportBtn" onclick="exportExcel()">📥 Excel Workbook</button>
+          <button class="btn btn-outline" id="btnResetFilters" onclick="resetAllFilters()" style="display:none; color:#f87171; border-color:rgba(239, 68, 68, 0.4);">🔄 Reset Filters</button>
         </div>
 
         <span class="counter-tag" id="visibleCounter">Showing ${enrichedJobs.length} jobs</span>
@@ -966,42 +967,48 @@ async function generateDashboardHtml(jobs, stats) {
 
   <script>
     const allJobs = ${JSON.stringify(enrichedJobs)};
-    let activeCategory = 'ready_to_apply';
+    let activeCategory = 'all';
     let activePortal = 'all';
     let currentViewMode = 'grid'; // 'grid' | 'timeline'
 
-    // Compute live category counts
-    const readyJobs = allJobs.filter(j => j.status === 'Eligible' && !j.is_expired);
-    const reviewJobs = allJobs.filter(j => j.status === 'Manual Review' && !j.is_expired);
-    const expiredJobs = allJobs.filter(j => j.is_expired);
+    function updateLiveCounters() {
+      const portalJobs = (activePortal === 'all')
+        ? allJobs
+        : allJobs.filter(j => j.portal_id === activePortal);
 
-    document.getElementById('count-ready').innerText = readyJobs.length;
-    document.getElementById('count-review').innerText = reviewJobs.length;
-    document.getElementById('count-expired').innerText = expiredJobs.length;
-    document.getElementById('count-all').innerText = allJobs.length;
+      const readyJobs = portalJobs.filter(j => j.status === 'Eligible' && !j.is_expired);
+      const reviewJobs = portalJobs.filter(j => j.status === 'Manual Review' && !j.is_expired);
+      const expiredJobs = portalJobs.filter(j => j.is_expired);
 
-    document.getElementById('stat-eligible').innerText = readyJobs.length;
-    document.getElementById('stat-review').innerText = reviewJobs.length;
+      document.getElementById('count-ready').innerText = readyJobs.length;
+      document.getElementById('count-review').innerText = reviewJobs.length;
+      document.getElementById('count-expired').innerText = expiredJobs.length;
+      document.getElementById('count-all').innerText = portalJobs.length;
 
-    // Compute live portal counts
-    const isroCount = allJobs.filter(j => j.portal_id === 'isro').length;
-    const sarkariCount = allJobs.filter(j => j.portal_id === 'sarkari_result').length;
-    const cdacCount = allJobs.filter(j => j.portal_id === 'cdac').length;
+      // Stats cards reflect database overview
+      document.getElementById('stat-eligible').innerText = allJobs.filter(j => j.status === 'Eligible' && !j.is_expired).length;
+      document.getElementById('stat-review').innerText = allJobs.filter(j => j.status === 'Manual Review' && !j.is_expired).length;
 
-    document.getElementById('pcount-all').innerText = allJobs.length;
-    document.getElementById('pcount-isro').innerText = isroCount;
-    document.getElementById('pcount-sarkari').innerText = sarkariCount;
-    document.getElementById('pcount-cdac').innerText = cdacCount;
+      // Portal pill counts
+      const isroCount = allJobs.filter(j => j.portal_id === 'isro').length;
+      const sarkariCount = allJobs.filter(j => j.portal_id === 'sarkari_result').length;
+      const cdacCount = allJobs.filter(j => j.portal_id === 'cdac').length;
 
-    // Check urgent jobs
-    const urgentActionable = allJobs.filter(j => (j.status === 'Eligible' || j.status === 'Manual Review') && j.is_expiring_soon);
-    document.getElementById('stat-urgent').innerText = urgentActionable.length;
+      document.getElementById('pcount-all').innerText = allJobs.length;
+      document.getElementById('pcount-isro').innerText = isroCount;
+      document.getElementById('pcount-sarkari').innerText = sarkariCount;
+      document.getElementById('pcount-cdac').innerText = cdacCount;
 
-    if (urgentActionable.length > 0) {
-      const banner = document.getElementById('actionCenter');
-      banner.style.display = 'flex';
-      document.getElementById('actionTitle').innerText = '🚨 ' + urgentActionable.length + ' Actionable Opportunity(ies) Closing in &le; 7 Days!';
-      document.getElementById('actionDesc').innerText = 'Deadlines are approaching soon for positions matching your qualifications. Click below to inspect them.';
+      // Check urgent actionable opportunities
+      const urgentActionable = allJobs.filter(j => (j.status === 'Eligible' || j.status === 'Manual Review') && j.is_expiring_soon);
+      document.getElementById('stat-urgent').innerText = urgentActionable.length;
+
+      if (urgentActionable.length > 0) {
+        const banner = document.getElementById('actionCenter');
+        banner.style.display = 'flex';
+        document.getElementById('actionTitle').innerText = '🚨 ' + urgentActionable.length + ' Actionable Opportunity(ies) Closing in &le; 7 Days!';
+        document.getElementById('actionDesc').innerText = 'Deadlines are approaching soon for positions matching your qualifications. Click below to inspect them.';
+      }
     }
 
     function setViewMode(mode) {
@@ -1014,19 +1021,72 @@ async function generateDashboardHtml(jobs, stats) {
     function selectCategoryTab(category, btn) {
       activeCategory = category;
       document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
-      btn.classList.add('active');
+      const targetBtn = btn || document.getElementById('tab-' + (category === 'ready_to_apply' ? 'ready' : (category === 'manual_review' ? 'review' : category)));
+      if (targetBtn) targetBtn.classList.add('active');
+
+      // Clear dropdown overrides when switching category tab
+      if (category !== 'all') {
+        document.getElementById('statusFilter').value = 'all';
+        document.getElementById('deadlineFilter').value = 'all';
+      }
       filterJobs();
     }
 
     function selectPortal(portalKey, btn) {
       activePortal = portalKey;
       document.querySelectorAll('.portal-pill').forEach(p => p.classList.remove('active'));
-      btn.classList.add('active');
+      if (btn) btn.classList.add('active');
+
+      // If switching to a portal that has 0 jobs in the current active category, auto-switch category to 'all'
+      const portalJobs = (portalKey === 'all') ? allJobs : allJobs.filter(j => j.portal_id === portalKey);
+      let matchCount = portalJobs.length;
+      if (activeCategory === 'ready_to_apply') {
+        matchCount = portalJobs.filter(j => j.status === 'Eligible' && !j.is_expired).length;
+      } else if (activeCategory === 'manual_review') {
+        matchCount = portalJobs.filter(j => j.status === 'Manual Review' && !j.is_expired).length;
+      } else if (activeCategory === 'expired') {
+        matchCount = portalJobs.filter(j => j.is_expired).length;
+      }
+
+      if (matchCount === 0 && portalJobs.length > 0) {
+        activeCategory = 'all';
+        document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('tab-all').classList.add('active');
+        document.getElementById('statusFilter').value = 'all';
+        document.getElementById('deadlineFilter').value = 'all';
+      }
+
+      updateLiveCounters();
+      filterJobs();
+    }
+
+    function resetAllFilters() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('tierFilter').value = 'all';
+      document.getElementById('statusFilter').value = 'all';
+      document.getElementById('deadlineFilter').value = 'all';
+      document.getElementById('sortOrder').value = 'deadline_asc';
+      activePortal = 'all';
+      activeCategory = 'all';
+
+      document.querySelectorAll('.portal-pill').forEach(p => p.classList.remove('active'));
+      document.getElementById('portal-all').classList.add('active');
+
+      document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('tab-all').classList.add('active');
+
+      updateLiveCounters();
       filterJobs();
     }
 
     function filterClosingSoon() {
-      selectCategoryTab('ready_to_apply', document.getElementById('tab-ready'));
+      activePortal = 'all';
+      document.querySelectorAll('.portal-pill').forEach(p => p.classList.remove('active'));
+      document.getElementById('portal-all').classList.add('active');
+      activeCategory = 'all';
+      document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('tab-all').classList.add('active');
+      document.getElementById('statusFilter').value = 'all';
       document.getElementById('deadlineFilter').value = 'soon';
       filterJobs();
     }
@@ -1211,7 +1271,14 @@ async function generateDashboardHtml(jobs, stats) {
     function renderTimelineView(jobs) {
       const container = document.getElementById('jobsContainer');
       if (jobs.length === 0) {
-        container.innerHTML = '<div class="no-results"><h3>No matching jobs found</h3><p style="margin-top:6px;">Try clearing filters or search terms.</p></div>';
+        container.innerHTML = \`
+          <div class="no-results">
+            <div style="font-size:36px; margin-bottom:12px;">🔍</div>
+            <h3 style="color:#f1f5f9; font-size:18px;">No matching jobs found</h3>
+            <p style="margin:8px 0 18px; color:var(--text-muted); font-size:14px;">The selected filter combination or search keywords matched 0 out of \${allJobs.length} jobs.</p>
+            <button class="btn btn-apply-primary" onclick="resetAllFilters()" style="cursor:pointer; font-weight:700; padding:8px 18px; font-size:13px;">🔄 Reset All Filters</button>
+          </div>
+        \`;
         return;
       }
 
@@ -1262,18 +1329,30 @@ async function generateDashboardHtml(jobs, stats) {
     function renderGridView(jobs) {
       const container = document.getElementById('jobsContainer');
       if (jobs.length === 0) {
-        container.innerHTML = '<div class="no-results"><h3>No matching jobs found</h3><p style="margin-top:6px;">Try clearing filters or search terms.</p></div>';
+        container.innerHTML = \`
+          <div class="no-results">
+            <div style="font-size:36px; margin-bottom:12px;">🔍</div>
+            <h3 style="color:#f1f5f9; font-size:18px;">No matching jobs found</h3>
+            <p style="margin:8px 0 18px; color:var(--text-muted); font-size:14px;">The selected filter combination or search keywords matched 0 out of \${allJobs.length} jobs.</p>
+            <button class="btn btn-apply-primary" onclick="resetAllFilters()" style="cursor:pointer; font-weight:700; padding:8px 18px; font-size:13px;">🔄 Reset All Filters</button>
+          </div>
+        \`;
         return;
       }
       container.innerHTML = '<div class="jobs-list">' + jobs.map(j => renderJobCard(j)).join('') + '</div>';
     }
 
     function filterJobs() {
-      const q = document.getElementById('searchInput').value.toLowerCase();
+      const q = document.getElementById('searchInput').value.toLowerCase().trim();
       const tier = document.getElementById('tierFilter').value;
       const status = document.getElementById('statusFilter').value;
       const deadline = document.getElementById('deadlineFilter').value;
       const sort = document.getElementById('sortOrder').value;
+
+      // Update reset button visibility
+      const isFiltered = (q !== '') || (tier !== 'all') || (status !== 'all') || (deadline !== 'all') || (activePortal !== 'all') || (activeCategory !== 'all');
+      const resetBtn = document.getElementById('btnResetFilters');
+      if (resetBtn) resetBtn.style.display = isFiltered ? 'inline-flex' : 'none';
 
       let filtered = allJobs.filter(j => {
         // Portal Source Filter
@@ -1295,6 +1374,7 @@ async function generateDashboardHtml(jobs, stats) {
             (j.organisation || '') + ' ' +
             (j.portal_name || '') + ' ' +
             (j.advertisement_no || '') + ' ' +
+            (j.post_code || '') + ' ' +
             (j.location || '') + ' ' +
             (j.qualification_clause || '') + ' ' +
             (j.reasoning || '')
@@ -1345,11 +1425,26 @@ async function generateDashboardHtml(jobs, stats) {
 
     document.getElementById('searchInput').addEventListener('input', filterJobs);
     document.getElementById('tierFilter').addEventListener('change', filterJobs);
-    document.getElementById('statusFilter').addEventListener('change', filterJobs);
-    document.getElementById('deadlineFilter').addEventListener('change', filterJobs);
+    document.getElementById('statusFilter').addEventListener('change', () => {
+      if (document.getElementById('statusFilter').value !== 'all') {
+        activeCategory = 'all';
+        document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('tab-all').classList.add('active');
+      }
+      filterJobs();
+    });
+    document.getElementById('deadlineFilter').addEventListener('change', () => {
+      if (document.getElementById('deadlineFilter').value !== 'all') {
+        activeCategory = 'all';
+        document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('tab-all').classList.add('active');
+      }
+      filterJobs();
+    });
     document.getElementById('sortOrder').addEventListener('change', filterJobs);
 
     // Initial render
+    updateLiveCounters();
     filterJobs();
   </script>
 </body>
