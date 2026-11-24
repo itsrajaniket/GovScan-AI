@@ -1,34 +1,7 @@
 {
-  "_comment": "Phase 3 starts with 5 sources. URLs and CSS selectors MUST be verified with the user before activating a watcher. Expand to 25+ in Phase 5.",
+  "_comment": "GovScan AI configured job sources. Direct watchers monitor official PSU/Govt career portals. Aggregators discover verified official notices across national portals.",
 
   "watchers": [
-    {
-      "id": "cdac",
-      "name": "CDAC (Centre for Development of Advanced Computing)",
-      "career_url": "TO_BE_VERIFIED",
-      "css_selector": "TO_BE_VERIFIED",
-      "enabled": false,
-      "tier_hint": 1,
-      "notes": "Frequently hires Project Engineers in electronics/CS. Verify URL at https://www.cdac.in/index.aspx?id=st_car_opportunity"
-    },
-    {
-      "id": "nielit",
-      "name": "NIELIT (National Institute of Electronics & IT)",
-      "career_url": "TO_BE_VERIFIED",
-      "css_selector": "TO_BE_VERIFIED",
-      "enabled": false,
-      "tier_hint": 1,
-      "notes": "Hires Scientists, Technical Assistants. Verify URL at https://www.nielit.gov.in/content/vacancies"
-    },
-    {
-      "id": "csir",
-      "name": "CSIR Labs (CEERI, CSIO, NPL, etc.)",
-      "career_url": "TO_BE_VERIFIED",
-      "css_selector": "TO_BE_VERIFIED",
-      "enabled": false,
-      "tier_hint": 1,
-      "notes": "CSIR labs hire via individual lab career pages and common CSIR portal. Verify URLs for each lab."
-    },
     {
       "id": "isro",
       "name": "ISRO (Indian Space Research Organisation)",
@@ -36,16 +9,88 @@
       "css_selector": "table, .content, main",
       "enabled": true,
       "tier_hint": 1,
-      "notes": "Hires Scientists/Engineers, Technical Assistants, Scientific Assistants. Verified active URL."
+      "notes": "Hires Scientists/Engineers, Technical Assistants, Scientific Assistants in Electronics and Physics."
+    },
+    {
+      "id": "drdo",
+      "name": "DRDO (Defence Research and Development Organisation - RAC)",
+      "career_url": "https://rac.gov.in",
+      "css_selector": "table, .table, #content, .content, main",
+      "enabled": true,
+      "tier_hint": 1,
+      "notes": "Scientist 'B', Senior Technical Assistant (STA-B) in Electronics, Physics, Computer Science."
+    },
+    {
+      "id": "ecil",
+      "name": "ECIL (Electronics Corporation of India Limited)",
+      "career_url": "https://www.ecil.co.in/jobs.html",
+      "css_selector": "table, .content, main",
+      "enabled": true,
+      "tier_hint": 1,
+      "notes": "DAE PSU hiring Technical Officers and Graduate Engineer Trainees in Electronics."
+    },
+    {
+      "id": "cdac",
+      "name": "CDAC (Centre for Development of Advanced Computing)",
+      "career_url": "https://www.cdac.in/index.aspx?id=careers",
+      "css_selector": "table, .content, main",
+      "enabled": true,
+      "tier_hint": 1,
+      "notes": "Project Engineers, Technical Officers, System Analysts in Electronics & IT."
+    },
+    {
+      "id": "aai",
+      "name": "AAI (Airports Authority of India)",
+      "career_url": "https://www.aai.aero/en/careers/recruitment",
+      "css_selector": "table, .view-content, main",
+      "enabled": true,
+      "tier_hint": 1,
+      "notes": "Junior Executive (Air Traffic Control - Physics/Maths required) & Junior Executive (Electronics)."
+    },
+    {
+      "id": "barc",
+      "name": "BARC (Bhabha Atomic Research Centre)",
+      "career_url": "https://www.barc.gov.in/careers/recruitment.html",
+      "css_selector": "table, .content, main",
+      "enabled": true,
+      "tier_hint": 1,
+      "notes": "Scientific Officer, Scientific Assistant 'B' (Physics & Electronics)."
+    },
+    {
+      "id": "sameer",
+      "name": "SAMEER (Society for Applied Microwave Electronics)",
+      "career_url": "https://www.sameer.gov.in",
+      "css_selector": "table, .content, main",
+      "enabled": true,
+      "tier_hint": 1,
+      "notes": "MeitY autonomous laboratory for Microwave, RF and Electronics R&D."
     },
     {
       "id": "bel",
       "name": "BEL (Bharat Electronics Limited)",
-      "career_url": "TO_BE_VERIFIED",
-      "css_selector": "TO_BE_VERIFIED",
-      "enabled": false,
+      "career_url": "https://bel-india.in",
+      "css_selector": "table, .content, main",
+      "enabled": true,
       "tier_hint": 1,
-      "notes": "PSU hiring Project/Contract Engineers. Verify URL at https://www.bel-india.in/career.aspx"
+      "notes": "Defence PSU hiring Project Engineers and Trainee Engineers in Electronics."
+    },
+    {
+      "id": "csir_ceeri",
+      "name": "CSIR-CEERI (Central Electronics Engineering Research Institute)",
+      "career_url": "https://www.ceeri.res.in",
+      "css_selector": "table, .content, main",
+      "enabled": true,
+      "tier_hint": 1,
+      "notes": "CSIR electronics lab in Pilani hiring Technical Assistants & Project Associates."
+    },
+    {
+      "id": "ncs",
+      "name": "NCS (National Career Service Portal)",
+      "career_url": "https://www.ncs.gov.in",
+      "css_selector": "table, .content, main",
+      "enabled": true,
+      "tier_hint": 2,
+      "notes": "Ministry of Labour & Employment central portal for all public sector jobs."
     }
   ],
 
@@ -65,16 +110,30 @@
       "name": "Sarkari Result Latest Jobs",
       "index_url": "https://www.sarkariresult.com/latestjob/",
       "enabled": true,
-      "limit": 10,
+      "limit": 15,
       "notes": "Scrapes latest job postings to discover official government notification PDFs and apply portals."
+    },
+    {
+      "id": "freejobalert",
+      "name": "FreeJobAlert Technical & Engineering Feed",
+      "index_url": "https://www.freejobalert.com/latest-notifications/",
+      "enabled": true,
+      "limit": 15,
+      "notes": "Broadest index of state and central engineering, PSU, banking, and scientific vacancies."
+    },
+    {
+      "id": "indgovtjobs",
+      "name": "IndGovtJobs M.Sc & Scientific Jobs",
+      "index_url": "https://www.indgovtjobs.in/search/label/M.Sc%20Jobs",
+      "enabled": true,
+      "limit": 15,
+      "notes": "Curated feed for M.Sc, Physics, Electronics, and Technical government recruitments."
     }
   ],
 
   "phase_5_expansion": [
-    "ECIL", "DRDO/CEPTAM", "SAMEER", "BIS", "STPI", "AAI", "BHEL",
-    "IIT/NIT/Central University non-teaching", "MPSEDC",
-    "NCS Portal", "RBI/NABARD/SEBI specialist posts",
-    "SSC (Tier 3)", "Banking (Tier 3)", "Railways (Tier 3)"
+    "BIS", "STPI", "BHEL", "IIT/NIT non-teaching", "MPSEDC",
+    "SSC CGL / IMD", "Railways RRB JE", "UPSC Specialist"
   ],
 
   "health_check": {

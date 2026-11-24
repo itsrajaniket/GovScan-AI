@@ -20,7 +20,10 @@
     "official_domains": [
       ".gov.in", ".nic.in", ".ac.in", ".res.in",
       ".cdac.in", ".isro.gov.in", ".drdo.gov.in",
-      ".bel-india.in", ".bhel.in", ".ecil.co.in"
+      ".bel-india.in", ".bhel.in", ".ecil.co.in",
+      ".aai.aero", ".sameer.gov.in", ".barc.gov.in",
+      ".ceeri.res.in", ".csio.res.in", ".ncs.gov.in",
+      ".nielit.gov.in", ".bank.in", ".ibps.in"
     ]
   },
   "telegram": {

@@ -103,19 +103,57 @@ function analyzeCandidateMatch(job) {
  */
 function getPortalSource(job) {
   if (job.source_type === 'aggregator_official_pdf') {
+    const url = (job.official_notification_url || '').toLowerCase();
+    const org = (job.organisation || '').toLowerCase();
+    if (job.source_id === 'freejobalert' || url.includes('freejobalert')) {
+      return { id: 'freejobalert', name: 'FreeJobAlert Indexer', icon: '🔔' };
+    }
+    if (job.source_id === 'indgovtjobs' || url.includes('indgovtjobs')) {
+      return { id: 'indgovtjobs', name: 'IndGovtJobs M.Sc Feed', icon: '📑' };
+    }
     return { id: 'sarkari_result', name: 'Sarkari Result Indexer', icon: '📰' };
   }
+
   const url = (job.official_notification_url || '').toLowerCase();
   const org = (job.organisation || '').toLowerCase();
+
+  if (url.includes('rac.gov.in') || url.includes('drdo.gov.in') || org.includes('drdo') || org.includes('rac') || org.includes('ceptam')) {
+    return { id: 'drdo', name: 'DRDO / RAC Recruitment', icon: '🛡️' };
+  }
+  if (url.includes('ecil.co.in') || org.includes('ecil') || org.includes('electronics corporation of india')) {
+    return { id: 'ecil', name: 'ECIL Hyderabad', icon: '⚡' };
+  }
+  if (url.includes('bel-india.in') || org.includes('bharat electronics') || org.includes(' bel ')) {
+    return { id: 'bel', name: 'Bharat Electronics (BEL)', icon: '📻' };
+  }
+  if (url.includes('aai.aero') || org.includes('airports authority') || org.includes(' aai ')) {
+    return { id: 'aai', name: 'Airports Authority of India (AAI)', icon: '✈️' };
+  }
+  if (url.includes('sameer.gov.in') || org.includes('sameer')) {
+    return { id: 'sameer', name: 'SAMEER Microwave Lab', icon: '🔬' };
+  }
+  if (url.includes('barc.gov.in') || org.includes('bhabha atomic') || org.includes('barc') || org.includes('dae')) {
+    return { id: 'barc', name: 'BARC / Atomic Energy', icon: '⚛️' };
+  }
+  if (url.includes('ceeri.res.in') || org.includes('ceeri') || org.includes('csir')) {
+    return { id: 'csir', name: 'CSIR Electronics Labs', icon: '🧪' };
+  }
+  if (url.includes('ncs.gov.in') || org.includes('national career service') || org.includes(' ncs ')) {
+    return { id: 'ncs', name: 'NCS Central Portal', icon: '🏛️' };
+  }
   if (url.includes('isro.gov.in') || org.includes('isro') || org.includes('shar') || org.includes('ursc') || org.includes('istrac') || org.includes('lpsc') || org.includes('sac') || org.includes('hsfc')) {
     return { id: 'isro', name: 'ISRO Careers Portal', icon: '🚀' };
   }
   if (url.includes('cdac.in') || org.includes('cdac')) {
     return { id: 'cdac', name: 'CDAC Careers', icon: '💻' };
   }
-  if (url.includes('nielit')) {
+  if (url.includes('nielit') || org.includes('nielit')) {
     return { id: 'nielit', name: 'NIELIT Portal', icon: '⚡' };
   }
+  if (url.includes('ssc.gov.in') || org.includes('staff selection')) {
+    return { id: 'ssc', name: 'SSC Selection Posts', icon: '📝' };
+  }
+
   return { id: 'other', name: 'Direct Official Notice', icon: '📄' };
 }
 
@@ -890,18 +928,9 @@ async function generateDashboardHtml(jobs, stats) {
     <!-- Portal / Source Breakdown Bar (Interactive) -->
     <div class="portal-breakdown">
       <span class="portal-header-title">📡 Discovered by Portal:</span>
-      <div class="portal-pills">
+      <div class="portal-pills" id="portalPills">
         <button class="portal-pill active" id="portal-all" onclick="selectPortal('all', this)">
           🌐 All Sources <span class="portal-count" id="pcount-all">0</span>
-        </button>
-        <button class="portal-pill" id="portal-isro" onclick="selectPortal('isro', this)">
-          🚀 ISRO Careers <span class="portal-count" id="pcount-isro">0</span>
-        </button>
-        <button class="portal-pill" id="portal-sarkari" onclick="selectPortal('sarkari_result', this)">
-          📰 Sarkari Result Indexer <span class="portal-count" id="pcount-sarkari">0</span>
-        </button>
-        <button class="portal-pill" id="portal-cdac" onclick="selectPortal('cdac', this)">
-          💻 CDAC Careers <span class="portal-count" id="pcount-cdac">0</span>
         </button>
       </div>
     </div>
@@ -989,15 +1018,8 @@ async function generateDashboardHtml(jobs, stats) {
       document.getElementById('stat-eligible').innerText = allJobs.filter(j => j.status === 'Eligible' && !j.is_expired).length;
       document.getElementById('stat-review').innerText = allJobs.filter(j => j.status === 'Manual Review' && !j.is_expired).length;
 
-      // Portal pill counts
-      const isroCount = allJobs.filter(j => j.portal_id === 'isro').length;
-      const sarkariCount = allJobs.filter(j => j.portal_id === 'sarkari_result').length;
-      const cdacCount = allJobs.filter(j => j.portal_id === 'cdac').length;
-
-      document.getElementById('pcount-all').innerText = allJobs.length;
-      document.getElementById('pcount-isro').innerText = isroCount;
-      document.getElementById('pcount-sarkari').innerText = sarkariCount;
-      document.getElementById('pcount-cdac').innerText = cdacCount;
+      // Render dynamic interactive portal breakdown pills
+      renderPortalPills();
 
       // Check urgent actionable opportunities
       const urgentActionable = allJobs.filter(j => (j.status === 'Eligible' || j.status === 'Manual Review') && j.is_expiring_soon);
@@ -1009,6 +1031,39 @@ async function generateDashboardHtml(jobs, stats) {
         document.getElementById('actionTitle').innerText = '🚨 ' + urgentActionable.length + ' Actionable Opportunity(ies) Closing in &le; 7 Days!';
         document.getElementById('actionDesc').innerText = 'Deadlines are approaching soon for positions matching your qualifications. Click below to inspect them.';
       }
+    }
+
+    function renderPortalPills() {
+      const container = document.getElementById('portalPills');
+      if (!container) return;
+
+      const portalMap = {};
+      allJobs.forEach(j => {
+        const pid = j.portal_id || 'other';
+        if (!portalMap[pid]) {
+          portalMap[pid] = {
+            id: pid,
+            name: j.portal_name || pid,
+            icon: j.portal_icon || '📄',
+            count: 0
+          };
+        }
+        portalMap[pid].count++;
+      });
+
+      let html = '<button class="portal-pill ' + (activePortal === 'all' ? 'active' : '') + '" id="portal-all" onclick="selectPortal(\\'all\\', this)">' +
+        '🌐 All Sources <span class="portal-count" id="pcount-all">' + allJobs.length + '</span>' +
+        '</button>';
+
+      const sortedPortals = Object.values(portalMap).sort((a, b) => b.count - a.count);
+      for (const p of sortedPortals) {
+        const isActive = (activePortal === p.id) ? 'active' : '';
+        html += '<button class="portal-pill ' + isActive + '" id="portal-' + p.id + '" onclick="selectPortal(\\'' + p.id + '\\', this)">' +
+          p.icon + ' ' + escapeHtml(p.name) + ' <span class="portal-count" id="pcount-' + p.id + '">' + p.count + '</span>' +
+          '</button>';
+      }
+
+      container.innerHTML = html;
     }
 
     function setViewMode(mode) {

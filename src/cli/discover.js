@@ -13,7 +13,7 @@ import { fileURLToPath } from 'url';
 import { getConfig } from '../core/config.js';
 import { checkSource } from '../core/watcher.js';
 import { fetchAndFilterRss } from '../core/rss.js';
-import { fetchSarkariResultNotices } from '../core/sarkari-result.js';
+import { fetchAggregatorNotices } from '../core/aggregators.js';
 import { downloadNotice, readDocument } from '../core/pdf-handler.js';
 import { checkEligibility, getCounterStats, canCallAPI } from '../core/gemini.js';
 import { parseAndValidate } from '../core/schema.js';
@@ -96,23 +96,21 @@ async function main() {
     }
   }
 
-  // ── Step 3: Check Aggregators (Sarkari Result Hints) ──
-  printSection('Checking Aggregators (Sarkari Result)');
+  // ── Step 3: Check Aggregators (Multi-Portal Indexers) ──
+  printSection('Checking Aggregators (Sarkari Result, FreeJobAlert, IndGovtJobs)');
   const aggregators = (sourcesData.aggregators || []).filter(a => a.enabled);
 
   if (aggregators.length === 0) {
     console.log('ℹ️  No aggregators enabled in config/sources.json.');
   } else {
     for (const agg of aggregators) {
-      if (agg.id === 'sarkari_result') {
-        console.log(`📡 Fetching aggregator notices from ${agg.name}...`);
-        try {
-          const notices = await fetchSarkariResultNotices(agg.limit || 10);
-          console.log(`   ✨ Found ${notices.length} official notice candidate(s) via ${agg.name}.`);
-          discoveredItems.push(...notices);
-        } catch (err) {
-          console.warn(`   ⚠️ Aggregator error (${agg.name}): ${err.message}`);
-        }
+      console.log(`📡 Fetching aggregator notices from ${agg.name}...`);
+      try {
+        const notices = await fetchAggregatorNotices(agg);
+        console.log(`   ✨ Found ${notices.length} official notice candidate(s) via ${agg.name}.`);
+        discoveredItems.push(...notices);
+      } catch (err) {
+        console.warn(`   ⚠️ Aggregator error (${agg.name}): ${err.message}`);
       }
     }
   }

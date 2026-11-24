@@ -12,7 +12,10 @@ import { verifyNoticeCandidate, isOfficialDomain } from './verify.js';
  */
 async function fetchPage(url) {
   const fetch = (await import('node-fetch')).default;
+  const https = (await import('https')).default;
+  const agent = new https.Agent({ rejectUnauthorized: false });
   const res = await fetch(url, {
+    agent,
     headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
