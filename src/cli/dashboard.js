@@ -1012,10 +1012,10 @@ async function generateDashboardHtml(jobs, stats) {
         ? allJobs
         : allJobs.filter(j => j.portal_id === activePortal);
 
-      const readyJobs = portalJobs.filter(j => j.status === 'Eligible' && !j.is_expired);
-      const reviewJobs = portalJobs.filter(j => j.status === 'Manual Review' && !j.is_expired);
-      const actionableJobs = portalJobs.filter(j => (j.status === 'Eligible' || j.status === 'Manual Review') && !j.is_expired);
-      const notEligibleJobs = portalJobs.filter(j => j.status === 'Not Eligible' && !j.is_expired);
+      const readyJobs = portalJobs.filter(j => j.status === 'Eligible' && j.tier <= 3 && !j.is_expired);
+      const reviewJobs = portalJobs.filter(j => j.status === 'Manual Review' && j.tier <= 3 && !j.is_expired);
+      const actionableJobs = portalJobs.filter(j => (j.status === 'Eligible' || j.status === 'Manual Review') && j.tier <= 3 && !j.is_expired);
+      const notEligibleJobs = portalJobs.filter(j => (j.status === 'Not Eligible' || j.tier === 4) && !j.is_expired);
       const expiredJobs = portalJobs.filter(j => j.is_expired);
 
       document.getElementById('count-ready').innerText = readyJobs.length;
@@ -1027,11 +1027,11 @@ async function generateDashboardHtml(jobs, stats) {
       document.getElementById('count-expired').innerText = expiredJobs.length;
 
       // Stats cards reflect database overview
-      document.getElementById('stat-eligible').innerText = allJobs.filter(j => j.status === 'Eligible' && !j.is_expired).length;
-      document.getElementById('stat-review').innerText = allJobs.filter(j => j.status === 'Manual Review' && !j.is_expired).length;
+      document.getElementById('stat-eligible').innerText = allJobs.filter(j => j.status === 'Eligible' && j.tier <= 3 && !j.is_expired).length;
+      document.getElementById('stat-review').innerText = allJobs.filter(j => j.status === 'Manual Review' && j.tier <= 3 && !j.is_expired).length;
 
       // Update Not Eligible toggle button
-      const totalLiveNE = allJobs.filter(j => j.status === 'Not Eligible' && !j.is_expired).length;
+      const totalLiveNE = allJobs.filter(j => (j.status === 'Not Eligible' || j.tier === 4) && !j.is_expired).length;
       const btnNE = document.getElementById('btnToggleNotEligible');
       if (btnNE) {
         if (includeNotEligible) {
@@ -1083,7 +1083,7 @@ async function generateDashboardHtml(jobs, stats) {
       allJobs.forEach(j => {
         // If user is in active/actionable mode, count only active actionable jobs
         if (!includeArchive && j.is_expired) return;
-        if (!includeNotEligible && j.status === 'Not Eligible') return;
+        if (!includeNotEligible && (j.status === 'Not Eligible' || j.tier === 4)) return;
         const pid = j.portal_id || 'other';
         if (!portalMap[pid]) {
           portalMap[pid] = {
@@ -1098,9 +1098,9 @@ async function generateDashboardHtml(jobs, stats) {
 
       let totalCount = 0;
       if (includeArchive && includeNotEligible) totalCount = allJobs.length;
-      else if (includeArchive) totalCount = allJobs.filter(j => j.status !== 'Not Eligible').length;
+      else if (includeArchive) totalCount = allJobs.filter(j => j.status !== 'Not Eligible' && j.tier !== 4).length;
       else if (includeNotEligible) totalCount = allJobs.filter(j => !j.is_expired).length;
-      else totalCount = allJobs.filter(j => !j.is_expired && j.status !== 'Not Eligible').length;
+      else totalCount = allJobs.filter(j => !j.is_expired && j.status !== 'Not Eligible' && j.tier !== 4).length;
 
       let html = '<button class="portal-pill ' + (activePortal === 'all' ? 'active' : '') + '" id="portal-all" onclick="selectPortal(\\'all\\', this)">' +
         '🌐 All Sources <span class="portal-count" id="pcount-all">' + totalCount + '</span>' +
@@ -1167,19 +1167,19 @@ async function generateDashboardHtml(jobs, stats) {
       const portalJobs = (portalKey === 'all') ? allJobs : allJobs.filter(j => j.portal_id === portalKey);
       let matchCount = portalJobs.length;
       if (activeCategory === 'ready_to_apply') {
-        matchCount = portalJobs.filter(j => j.status === 'Eligible' && !j.is_expired).length;
+        matchCount = portalJobs.filter(j => j.status === 'Eligible' && j.tier <= 3 && !j.is_expired).length;
       } else if (activeCategory === 'manual_review') {
-        matchCount = portalJobs.filter(j => j.status === 'Manual Review' && !j.is_expired).length;
+        matchCount = portalJobs.filter(j => j.status === 'Manual Review' && j.tier <= 3 && !j.is_expired).length;
       } else if (activeCategory === 'actionable') {
-        matchCount = portalJobs.filter(j => (j.status === 'Eligible' || j.status === 'Manual Review') && !j.is_expired).length;
+        matchCount = portalJobs.filter(j => (j.status === 'Eligible' || j.status === 'Manual Review') && j.tier <= 3 && !j.is_expired).length;
       } else if (activeCategory === 'not_eligible') {
-        matchCount = portalJobs.filter(j => j.status === 'Not Eligible' && !j.is_expired).length;
+        matchCount = portalJobs.filter(j => (j.status === 'Not Eligible' || j.tier === 4) && !j.is_expired).length;
       } else if (activeCategory === 'expired') {
         matchCount = portalJobs.filter(j => j.is_expired).length;
       }
 
       if (matchCount === 0 && portalJobs.length > 0) {
-        const hasActionable = portalJobs.some(j => (j.status === 'Eligible' || j.status === 'Manual Review') && !j.is_expired);
+        const hasActionable = portalJobs.some(j => (j.status === 'Eligible' || j.status === 'Manual Review') && j.tier <= 3 && !j.is_expired);
         if (hasActionable) {
           activeCategory = 'actionable';
           includeArchive = false;
@@ -1530,18 +1530,18 @@ async function generateDashboardHtml(jobs, stats) {
         // Archive Separation: Hide expired jobs unless archive mode is on or specifically chosen
         if (!userWantsExpired && j.is_expired) return false;
 
-        // Not Eligible Separation: Hide Not Eligible jobs unless drawer toggle is on or specifically chosen
-        if (!userWantsNotEligible && j.status === 'Not Eligible') return false;
+        // Not Eligible Separation: Hide Not Eligible or Tier 4 jobs unless drawer toggle is on or specifically chosen
+        if (!userWantsNotEligible && (j.status === 'Not Eligible' || j.tier === 4)) return false;
 
         // Category Tab Filter
         if (activeCategory === 'actionable') {
-          if ((j.status !== 'Eligible' && j.status !== 'Manual Review') || j.is_expired) return false;
+          if ((j.status !== 'Eligible' && j.status !== 'Manual Review') || j.tier === 4 || j.is_expired) return false;
         } else if (activeCategory === 'ready_to_apply') {
-          if (j.status !== 'Eligible' || j.is_expired) return false;
+          if (j.status !== 'Eligible' || j.tier === 4 || j.is_expired) return false;
         } else if (activeCategory === 'manual_review') {
-          if (j.status !== 'Manual Review' || j.is_expired) return false;
+          if (j.status !== 'Manual Review' || j.tier === 4 || j.is_expired) return false;
         } else if (activeCategory === 'not_eligible') {
-          if (j.status !== 'Not Eligible' || j.is_expired) return false;
+          if ((j.status !== 'Not Eligible' && j.tier !== 4) || j.is_expired) return false;
         } else if (activeCategory === 'expired') {
           if (!j.is_expired) return false;
         }
@@ -1589,8 +1589,8 @@ async function generateDashboardHtml(jobs, stats) {
         return 0;
       });
 
-      const totalLiveActionable = allJobs.filter(j => !j.is_expired && (j.status === 'Eligible' || j.status === 'Manual Review')).length;
-      const totalNotEligibleLive = allJobs.filter(j => !j.is_expired && j.status === 'Not Eligible').length;
+      const totalLiveActionable = allJobs.filter(j => !j.is_expired && j.tier <= 3 && (j.status === 'Eligible' || j.status === 'Manual Review')).length;
+      const totalNotEligibleLive = allJobs.filter(j => !j.is_expired && (j.status === 'Not Eligible' || j.tier === 4)).length;
       const totalExpired = allJobs.filter(j => j.is_expired).length;
 
       let counterHtml = 'Showing <strong>' + filtered.length + '</strong>';

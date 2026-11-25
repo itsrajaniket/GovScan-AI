@@ -88,9 +88,9 @@
       "name": "NCS (National Career Service Portal)",
       "career_url": "https://www.ncs.gov.in",
       "css_selector": "table, .content, main",
-      "enabled": true,
+      "enabled": false,
       "tier_hint": 2,
-      "notes": "Ministry of Labour & Employment central portal for all public sector jobs."
+      "notes": "Disabled: Portal homepage contains registration service links rather than direct vacancy notifications. Re-enable when specific sector search URL is provided."
     }
   ],
 

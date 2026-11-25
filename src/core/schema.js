@@ -64,6 +64,12 @@ function validatePost(post, index) {
     );
   }
 
+  // Tier 4 is by definition "Unrelated or clearly not eligible".
+  // Force status to "Not Eligible" if Tier is 4 to prevent unrelated posts from polluting Manual Review.
+  if (cleaned.tier === 4 && cleaned.status !== 'Not Eligible') {
+    cleaned.status = 'Not Eligible';
+  }
+
   // flags array
   if (!Array.isArray(post.flags)) {
     errors.push(`Post ${index}: "flags" must be an array.`);
