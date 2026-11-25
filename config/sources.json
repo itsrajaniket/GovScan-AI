@@ -84,6 +84,33 @@
       "notes": "CSIR electronics lab in Pilani hiring Technical Assistants & Project Associates."
     },
     {
+      "id": "nielit",
+      "name": "NIELIT (National Institute of Electronics & Information Technology)",
+      "career_url": "https://www.nielit.gov.in/content/vacancies",
+      "css_selector": "table, .content, main",
+      "enabled": true,
+      "tier_hint": 1,
+      "notes": "MeitY central recruiter for Scientist 'B' and Scientific/Technical Assistants in Electronics & IT."
+    },
+    {
+      "id": "bis",
+      "name": "BIS (Bureau of Indian Standards)",
+      "career_url": "https://www.bis.gov.in/career/recruitment/",
+      "css_selector": "table, .content, main",
+      "enabled": true,
+      "tier_hint": 1,
+      "notes": "National standards body hiring Scientists and Technical Assistants in Electronics/Physics."
+    },
+    {
+      "id": "bhel",
+      "name": "BHEL (Bharat Heavy Electricals Limited)",
+      "career_url": "https://careers.bhel.in/",
+      "css_selector": "table, .content, main",
+      "enabled": true,
+      "tier_hint": 1,
+      "notes": "Maharatna PSU hiring Engineer Trainees and Technical Officers."
+    },
+    {
       "id": "ncs",
       "name": "NCS (National Career Service Portal)",
       "career_url": "https://www.ncs.gov.in",
@@ -100,7 +127,12 @@
       "name": "Google Alerts — Government Job Notifications",
       "feed_url": "TO_BE_PROVIDED_BY_USER",
       "enabled": false,
-      "notes": "User will provide RSS feed URLs from Google Alerts. Treat as supplement to watchers only."
+      "recommended_queries": [
+        "\"M.Sc Electronics\" OR \"B.Sc Physics\" (\"Recruitment\" OR \"Notification\" OR \"Vacancy\") site:gov.in OR site:nic.in",
+        "(\"Technical Assistant\" OR \"Scientist B\" OR \"Project Engineer\") (\"Electronics\" OR \"Computer Science\") site:gov.in",
+        "(\"PGDCA\" OR \"MCA\") (\"Programmer\" OR \"System Analyst\") site:gov.in"
+      ],
+      "instructions": "Create an alert at https://www.google.com/alerts using one of the queries above, set 'Deliver to: RSS feed', copy the feed link, and paste it into 'feed_url' with 'enabled: true'."
     }
   ],
 
@@ -119,7 +151,7 @@
       "index_url": "https://www.freejobalert.com/latest-notifications/",
       "enabled": true,
       "limit": 15,
-      "notes": "Broadest index of state and central engineering, PSU, banking, and scientific vacancies."
+      "notes": "Broadest index of state and central engineering, PSU, banking, and scientific vacancies (captures SSC, Railways, BPSC, and MPPSC)."
     },
     {
       "id": "indgovtjobs",
@@ -131,10 +163,16 @@
     }
   ],
 
-  "phase_5_expansion": [
-    "BIS", "STPI", "BHEL", "IIT/NIT non-teaching", "MPSEDC",
-    "SSC CGL / IMD", "Railways RRB JE", "UPSC Specialist"
-  ],
+  "expansion_coverage": {
+    "monitored_via_aggregators": [
+      "Staff Selection Commission (SSC Scientific Assistant / IMD)",
+      "Railways RRB (Junior Engineer - Electronics & Telecommunication)",
+      "Bihar Public Service Commission (BPSC Polytechnic / Assistant Professor)",
+      "Madhya Pradesh State Electronics Development Corp (MPSEDC / MPOnline)",
+      "Central Universities & IIT/NIT non-teaching technical cadres"
+    ],
+    "notes": "State PSCs (BPSC/MPPSC) frequently use IP geofences, SSL legacy renegotiation, or Captcha that block direct machine scrapers; aggregator feeds reliably extract and supply verified official PDF links."
+  },
 
   "health_check": {
     "alert_if_no_items_days": 7,

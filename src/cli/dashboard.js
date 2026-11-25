@@ -150,6 +150,12 @@ function getPortalSource(job) {
   if (url.includes('nielit') || org.includes('nielit')) {
     return { id: 'nielit', name: 'NIELIT Portal', icon: '⚡' };
   }
+  if (url.includes('bis.gov.in') || org.includes('bureau of indian standards')) {
+    return { id: 'bis', name: 'Bureau of Indian Standards (BIS)', icon: '📐' };
+  }
+  if (url.includes('bhel.in') || org.includes('bharat heavy electricals')) {
+    return { id: 'bhel', name: 'BHEL Maharatna PSU', icon: '⚙️' };
+  }
   if (url.includes('ssc.gov.in') || org.includes('staff selection')) {
     return { id: 'ssc', name: 'SSC Selection Posts', icon: '📝' };
   }
