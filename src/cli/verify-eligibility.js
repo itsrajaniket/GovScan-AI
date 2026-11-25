@@ -8,10 +8,9 @@ import { getDB, queryJobs, save, closeDB } from '../core/database.js';
 
 const RESCUE_KEYWORDS = [
   'electronics', 'physics', 'telecommunication', 'tele-comm',
-  'm.sc', 'msc', 'b.sc', 'bsc', 'pgdca', 'mca',
-  'computer applications', 'computer science', 'instrumentation',
-  'allied', 'equivalent', 'relevant discipline', 'any graduate',
-  'graduate in science', 'post graduate in science'
+  'pgdca', 'mca', 'computer applications', 'computer science',
+  'instrumentation', 'graduate in science', 'post graduate in science',
+  'air traffic control'
 ];
 
 async function main() {
@@ -26,28 +25,58 @@ async function main() {
   for (const job of jobs) {
     if (job.status !== 'Not Eligible') continue;
 
-    const fullText = `${job.post_name || ''} ${job.qualification_clause || ''} ${job.reasoning || ''}`.toLowerCase();
+    // CRITICAL: Evaluate ONLY the official notice text (post_name and qualification_clause).
+    // NEVER search inside reasoning, as reasoning often explains why candidate's degree is rejected!
+    const noticeText = `${job.post_name || ''} ${job.qualification_clause || ''}`.toLowerCase();
     const reasonText = (job.reasoning || '').toLowerCase();
+
+    // ── Disqualifier Gate ──
+    const isDisqualified =
+      noticeText.includes('b.ed') ||
+      noticeText.includes('d.el.ed') ||
+      noticeText.includes('elementary education') ||
+      noticeText.includes('primary teacher') ||
+      noticeText.includes('prt') ||
+      (noticeText.includes('tgt') && !noticeText.includes('pgt physics')) ||
+      noticeText.includes('mbbs') ||
+      noticeText.includes('llb') ||
+      noticeText.includes('b.sc. (chemistry)') ||
+      noticeText.includes('b.sc. in biological science') ||
+      noticeText.includes('b.sc chemistry') ||
+      (noticeText.includes('chemistry') && !noticeText.includes('physics') && !noticeText.includes('electronics')) ||
+      noticeText.includes('civil judge') ||
+      noticeText.includes('fire service') ||
+      noticeText.includes('fireman') ||
+      noticeText.includes('cook') ||
+      noticeText.includes('driver') ||
+      noticeText.includes('welder') ||
+      noticeText.includes('fitter') ||
+      noticeText.includes('catering') ||
+      noticeText.includes('co-pilot') ||
+      noticeText.includes('coconut development') ||
+      (noticeText.includes('mechanical') && !noticeText.includes('electronics')) ||
+      (noticeText.includes('civil') && !noticeText.includes('electronics'));
+
+    if (isDisqualified) {
+      confirmedUnrelatedCount++;
+      continue;
+    }
 
     let shouldRescue = false;
     let rescueReason = '';
 
-    // ── Check 1: Education Subject Mentioned ──
+    // ── Check 1: Education Subject Mentioned in Notice ──
     for (const kw of RESCUE_KEYWORDS) {
-      if (fullText.includes(kw)) {
-        // Exclude strictly medical / civil / law false matches
-        const isClearlyUnrelated = fullText.includes('mbbs') || fullText.includes('civil judge') || fullText.includes('llb') || fullText.includes('law graduate');
-        if (!isClearlyUnrelated) {
-          shouldRescue = true;
-          rescueReason = `Matched keyword "${kw}" in qualification clause or evaluation text`;
-          break;
-        }
+      if (noticeText.includes(kw)) {
+        shouldRescue = true;
+        rescueReason = `Matched keyword "${kw}" directly in post name or qualification clause`;
+        break;
       }
     }
 
     // ── Check 2: Experience was Desirable / Not Essential ──
-    if (!shouldRescue && (fullText.includes('desirable') || fullText.includes('preferred')) && fullText.includes('experience')) {
-      if (!fullText.includes('mandatory experience') && !fullText.includes('essential experience')) {
+    if (!shouldRescue && (noticeText.includes('desirable') || noticeText.includes('preferred')) && noticeText.includes('experience')) {
+      if (!noticeText.includes('mandatory experience') && !noticeText.includes('essential experience')) {
         shouldRescue = true;
         rescueReason = 'Experience is marked desirable/preferred rather than strictly essential';
       }
@@ -55,21 +84,26 @@ async function main() {
 
     // ── Check 3: Age Relaxation Check (OBC-NCL +3 Years) ──
     // Candidate age is 27 (born 23-03-1999).
+    // ONLY rescue if the post is in a relevant technical field and age was the blocker
     if (!shouldRescue && job.max_age_for_my_category) {
       if (27 <= job.max_age_for_my_category) {
         if (reasonText.includes('age') && (reasonText.includes('exceed') || reasonText.includes('overage'))) {
-          shouldRescue = true;
-          rescueReason = `Candidate (age 27) is within OBC-NCL relaxed age limit (${job.max_age_for_my_category})`;
+          const isTech = ['electronics', 'physics', 'computer', 'telecom', 'scientist', 'engineer', 'assistant'].some(kw => noticeText.includes(kw));
+          if (isTech) {
+            shouldRescue = true;
+            rescueReason = `Candidate (age 27) is within OBC-NCL relaxed age limit (${job.max_age_for_my_category})`;
+          }
         }
       }
     }
 
-    // ── Check 4: Technical Assistance / Scientific Assistant / Non-Teaching Posts ──
+    // ── Check 4: Technical Assistance / Scientific Assistant in Electronics/Physics Labs ──
     if (!shouldRescue) {
       const postLower = (job.post_name || '').toLowerCase();
-      if (postLower.includes('scientific assistant') || postLower.includes('technical assistant') || postLower.includes('project assistant') || postLower.includes('project engineer')) {
+      if ((postLower.includes('scientific assistant') || postLower.includes('technical assistant')) && 
+          (noticeText.includes('physics') || noticeText.includes('electronics') || noticeText.includes('computer'))) {
         shouldRescue = true;
-        rescueReason = 'Technical/Scientific assistant post requires manual review for M.Sc/B.Sc acceptance';
+        rescueReason = 'Technical/Scientific assistant post in relevant discipline requires manual review';
       }
     }
 

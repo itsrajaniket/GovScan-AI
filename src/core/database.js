@@ -191,11 +191,21 @@ export async function upsertJob(post) {
   const normalizedAgeCutoff = normalizeDateToISO(post.age_cutoff_date);
 
   // Check for existing record (dedup)
-  const existing = db.exec(`
-    SELECT id, pdf_hash, last_date, status, tier 
-    FROM jobs 
-    WHERE organisation = ? AND advertisement_no = ? AND post_code = ?
-  `, [post.organisation, post.advertisement_no || null, post.post_code || null]);
+  // Handles NULL safely in SQLite and falls back to post_name when advertisement_no is absent.
+  let existing = [];
+  if (post.advertisement_no) {
+    existing = db.exec(`
+      SELECT id, pdf_hash, last_date, status, tier 
+      FROM jobs 
+      WHERE organisation = ? AND advertisement_no = ? AND (post_code IS ? OR (post_code IS NULL AND ? IS NULL))
+    `, [post.organisation, post.advertisement_no, post.post_code || null, post.post_code || null]);
+  } else {
+    existing = db.exec(`
+      SELECT id, pdf_hash, last_date, status, tier 
+      FROM jobs 
+      WHERE organisation = ? AND post_name = ?
+    `, [post.organisation, post.post_name]);
+  }
 
   if (existing.length > 0 && existing[0].values.length > 0) {
     const row = existing[0].values[0];
