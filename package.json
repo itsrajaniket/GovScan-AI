@@ -16,7 +16,8 @@
     "reminders": "node src/cli/reminders.js",
     "dashboard": "node src/cli/dashboard.js",
     "excel": "node src/cli/export-excel.js",
-    "verify-dates": "node src/cli/verify-dates.js"
+    "verify-dates": "node src/cli/verify-dates.js",
+    "verify-eligibility": "node src/cli/verify-eligibility.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
