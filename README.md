@@ -320,7 +320,8 @@ GovScan AI/
     └── Writes data/dashboard.html and docs/index.html
     └── Writes data/exports/GovScan_Job_Report_YYYY-MM-DD.xlsx
 11. src/core/telegram.js sends binary .xlsx document directly to user's Telegram chat
-12. Process exits with code 0; database connection cleanly closed
+12. src/cli/daily-run.js performs automated git commit & push to GitHub Pages if docs/ has changed
+13. Process exits with code 0; database connection cleanly closed
 ```
 
 ---

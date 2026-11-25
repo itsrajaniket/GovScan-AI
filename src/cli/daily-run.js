@@ -7,12 +7,14 @@
 // 2. Mark expired jobs & run deadline reminders (7d/2d + Sunday weekly report)
 // 3. Source health audit (alert if any watcher or feed silent >= 7 days)
 // 4. Discovery runner (poll watchers & Google Alerts, verify, evaluate with Gemini, alert)
-// 5. Catch any pipeline failure and send an urgent alert to Telegram
+// 5. Refresh Local HTML Dashboard & Multi-Tab Excel Workbook (and Telegram dispatch)
+// 6. Automated Git sync (commit & push docs/index.html to GitHub Pages once daily)
+// 7. Catch any pipeline failure and send an urgent alert to Telegram
 
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { spawn } from 'child_process';
+import { spawn, execSync } from 'child_process';
 import { getConfig } from '../core/config.js';
 import { getDB, closeDB } from '../core/database.js';
 import { sendMessage, sendDocument } from '../core/telegram.js';
@@ -155,6 +157,23 @@ async function main() {
       } catch (docErr) {
         console.warn(`Could not send Excel document: ${docErr.message}`);
       }
+    }
+
+    // Step 5: Automated Daily Git Sync (GitHub Pages)
+    console.log('\n--- Step 5: Automated Daily Git Sync (GitHub Pages) ---');
+    try {
+      const statusOutput = execSync('git status --porcelain docs/', { cwd: ROOT }).toString().trim();
+      if (statusOutput) {
+        console.log('📦 Changes detected in docs/index.html. Pushing update to GitHub Pages...');
+        execSync('git add docs/', { cwd: ROOT });
+        execSync(`git commit -m "chore: automated daily dashboard update [${todayStr}]"`, { cwd: ROOT });
+        execSync('git push origin main', { cwd: ROOT });
+        console.log('🚀 Successfully pushed daily update to GitHub Pages.');
+      } else {
+        console.log('✔️ No dashboard changes detected today. Skipping git push.');
+      }
+    } catch (gitErr) {
+      console.warn(`⚠️ Automated git push skipped/failed: ${gitErr.message}`);
     }
 
     console.log('\n' + '='.repeat(65));
