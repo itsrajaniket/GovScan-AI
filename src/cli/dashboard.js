@@ -915,13 +915,13 @@ async function generateDashboardHtml(jobs, stats) {
         🟢 Where I Can Apply (Open &amp; Eligible) <span class="tab-count" id="count-ready">0</span>
       </button>
       <button class="cat-tab" id="tab-review" onclick="selectCategoryTab('manual_review', this)">
-        🔍 Needs Manual Review <span class="tab-count" id="count-review">0</span>
+        🔍 Needs Manual Review (Open) <span class="tab-count" id="count-review">0</span>
+      </button>
+      <button class="cat-tab active" id="tab-live" onclick="selectCategoryTab('live', this)">
+        ✨ Live &amp; Open Opportunities <span class="tab-count" id="count-live">0</span>
       </button>
       <button class="cat-tab" id="tab-expired" onclick="selectCategoryTab('expired', this)">
-        ⏰ Expired / Closed Deadlines <span class="tab-count" id="count-expired">0</span>
-      </button>
-      <button class="cat-tab active" id="tab-all" onclick="selectCategoryTab('all', this)">
-        📁 Full Archive (All Posts) <span class="tab-count" id="count-all">0</span>
+        📦 Past Deadlines Archive <span class="tab-count" id="count-expired">0</span>
       </button>
     </div>
 
@@ -980,6 +980,7 @@ async function generateDashboardHtml(jobs, stats) {
             <option value="org_asc">Sort: Organisation (A-Z)</option>
           </select>
 
+          <button class="btn btn-outline" id="btnToggleArchive" onclick="toggleArchiveMode()">📦 Include Archive</button>
           <button class="btn btn-outline" id="exportBtn" onclick="exportExcel()">📥 Excel Workbook</button>
           <button class="btn btn-outline" id="btnResetFilters" onclick="resetAllFilters()" style="display:none; color:#f87171; border-color:rgba(239, 68, 68, 0.4);">🔄 Reset Filters</button>
         </div>
@@ -996,8 +997,9 @@ async function generateDashboardHtml(jobs, stats) {
 
   <script>
     const allJobs = ${JSON.stringify(enrichedJobs)};
-    let activeCategory = 'all';
+    let activeCategory = 'live'; // 'live' | 'ready_to_apply' | 'manual_review' | 'expired'
     let activePortal = 'all';
+    let includeArchive = false; // By default, expired historical notices are kept aside!
     let currentViewMode = 'grid'; // 'grid' | 'timeline'
 
     function updateLiveCounters() {
@@ -1007,16 +1009,33 @@ async function generateDashboardHtml(jobs, stats) {
 
       const readyJobs = portalJobs.filter(j => j.status === 'Eligible' && !j.is_expired);
       const reviewJobs = portalJobs.filter(j => j.status === 'Manual Review' && !j.is_expired);
+      const liveJobs = portalJobs.filter(j => !j.is_expired);
       const expiredJobs = portalJobs.filter(j => j.is_expired);
 
       document.getElementById('count-ready').innerText = readyJobs.length;
       document.getElementById('count-review').innerText = reviewJobs.length;
+      const countLive = document.getElementById('count-live');
+      if (countLive) countLive.innerText = liveJobs.length;
       document.getElementById('count-expired').innerText = expiredJobs.length;
-      document.getElementById('count-all').innerText = portalJobs.length;
 
       // Stats cards reflect database overview
       document.getElementById('stat-eligible').innerText = allJobs.filter(j => j.status === 'Eligible' && !j.is_expired).length;
       document.getElementById('stat-review').innerText = allJobs.filter(j => j.status === 'Manual Review' && !j.is_expired).length;
+
+      // Update Archive toggle button text
+      const totalExpired = allJobs.filter(j => j.is_expired).length;
+      const archiveBtn = document.getElementById('btnToggleArchive');
+      if (archiveBtn) {
+        if (includeArchive) {
+          archiveBtn.innerHTML = '🟢 Archive Included (' + totalExpired + ')';
+          archiveBtn.style.color = '#38bdf8';
+          archiveBtn.style.borderColor = '#38bdf8';
+        } else {
+          archiveBtn.innerHTML = '📦 Include Archive (' + totalExpired + ')';
+          archiveBtn.style.color = '';
+          archiveBtn.style.borderColor = '';
+        }
+      }
 
       // Render dynamic interactive portal breakdown pills
       renderPortalPills();
@@ -1039,6 +1058,8 @@ async function generateDashboardHtml(jobs, stats) {
 
       const portalMap = {};
       allJobs.forEach(j => {
+        // If user is in active-only mode, count only active jobs for the pills
+        if (!includeArchive && j.is_expired) return;
         const pid = j.portal_id || 'other';
         if (!portalMap[pid]) {
           portalMap[pid] = {
@@ -1051,8 +1072,10 @@ async function generateDashboardHtml(jobs, stats) {
         portalMap[pid].count++;
       });
 
+      const totalCount = includeArchive ? allJobs.length : allJobs.filter(j => !j.is_expired).length;
+
       let html = '<button class="portal-pill ' + (activePortal === 'all' ? 'active' : '') + '" id="portal-all" onclick="selectPortal(\\'all\\', this)">' +
-        '🌐 All Sources <span class="portal-count" id="pcount-all">' + allJobs.length + '</span>' +
+        '🌐 All Sources <span class="portal-count" id="pcount-all">' + totalCount + '</span>' +
         '</button>';
 
       const sortedPortals = Object.values(portalMap).sort((a, b) => b.count - a.count);
@@ -1073,17 +1096,27 @@ async function generateDashboardHtml(jobs, stats) {
       filterJobs();
     }
 
+    function toggleArchiveMode() {
+      includeArchive = !includeArchive;
+      updateLiveCounters();
+      filterJobs();
+    }
+
     function selectCategoryTab(category, btn) {
       activeCategory = category;
       document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
-      const targetBtn = btn || document.getElementById('tab-' + (category === 'ready_to_apply' ? 'ready' : (category === 'manual_review' ? 'review' : category)));
+      const targetBtn = btn || document.getElementById('tab-' + (category === 'ready_to_apply' ? 'ready' : (category === 'manual_review' ? 'review' : (category === 'live' ? 'live' : category))));
       if (targetBtn) targetBtn.classList.add('active');
 
-      // Clear dropdown overrides when switching category tab
-      if (category !== 'all') {
+      if (category === 'expired') {
+        includeArchive = true;
+      } else {
+        includeArchive = false;
         document.getElementById('statusFilter').value = 'all';
         document.getElementById('deadlineFilter').value = 'all';
       }
+
+      updateLiveCounters();
       filterJobs();
     }
 
@@ -1092,21 +1125,33 @@ async function generateDashboardHtml(jobs, stats) {
       document.querySelectorAll('.portal-pill').forEach(p => p.classList.remove('active'));
       if (btn) btn.classList.add('active');
 
-      // If switching to a portal that has 0 jobs in the current active category, auto-switch category to 'all'
       const portalJobs = (portalKey === 'all') ? allJobs : allJobs.filter(j => j.portal_id === portalKey);
       let matchCount = portalJobs.length;
       if (activeCategory === 'ready_to_apply') {
         matchCount = portalJobs.filter(j => j.status === 'Eligible' && !j.is_expired).length;
       } else if (activeCategory === 'manual_review') {
         matchCount = portalJobs.filter(j => j.status === 'Manual Review' && !j.is_expired).length;
+      } else if (activeCategory === 'live') {
+        matchCount = portalJobs.filter(j => !j.is_expired).length;
       } else if (activeCategory === 'expired') {
         matchCount = portalJobs.filter(j => j.is_expired).length;
       }
 
       if (matchCount === 0 && portalJobs.length > 0) {
-        activeCategory = 'all';
-        document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
-        document.getElementById('tab-all').classList.add('active');
+        const hasLive = portalJobs.some(j => !j.is_expired);
+        if (hasLive) {
+          activeCategory = 'live';
+          includeArchive = false;
+          document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+          const liveTab = document.getElementById('tab-live');
+          if (liveTab) liveTab.classList.add('active');
+        } else {
+          activeCategory = 'expired';
+          includeArchive = true;
+          document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+          const expTab = document.getElementById('tab-expired');
+          if (expTab) expTab.classList.add('active');
+        }
         document.getElementById('statusFilter').value = 'all';
         document.getElementById('deadlineFilter').value = 'all';
       }
@@ -1122,13 +1167,16 @@ async function generateDashboardHtml(jobs, stats) {
       document.getElementById('deadlineFilter').value = 'all';
       document.getElementById('sortOrder').value = 'deadline_asc';
       activePortal = 'all';
-      activeCategory = 'all';
+      activeCategory = 'live';
+      includeArchive = false;
 
       document.querySelectorAll('.portal-pill').forEach(p => p.classList.remove('active'));
-      document.getElementById('portal-all').classList.add('active');
+      const allBtn = document.getElementById('portal-all');
+      if (allBtn) allBtn.classList.add('active');
 
       document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
-      document.getElementById('tab-all').classList.add('active');
+      const liveTab = document.getElementById('tab-live');
+      if (liveTab) liveTab.classList.add('active');
 
       updateLiveCounters();
       filterJobs();
@@ -1137,12 +1185,16 @@ async function generateDashboardHtml(jobs, stats) {
     function filterClosingSoon() {
       activePortal = 'all';
       document.querySelectorAll('.portal-pill').forEach(p => p.classList.remove('active'));
-      document.getElementById('portal-all').classList.add('active');
-      activeCategory = 'all';
+      const allBtn = document.getElementById('portal-all');
+      if (allBtn) allBtn.classList.add('active');
+      activeCategory = 'live';
+      includeArchive = false;
       document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
-      document.getElementById('tab-all').classList.add('active');
+      const liveTab = document.getElementById('tab-live');
+      if (liveTab) liveTab.classList.add('active');
       document.getElementById('statusFilter').value = 'all';
       document.getElementById('deadlineFilter').value = 'soon';
+      updateLiveCounters();
       filterJobs();
     }
 
@@ -1221,8 +1273,10 @@ async function generateDashboardHtml(jobs, stats) {
 
       let deadlineBadge = '';
       if (job.last_date) {
-        if (job.is_expired) {
-          deadlineBadge = '<span class="countdown-expired">Expired: ' + job.display_last_date + '</span>';
+        if (job.days_left !== null && job.days_left >= -3 && job.days_left < 0) {
+          deadlineBadge = '<span class="countdown-urgent" style="background:rgba(234,179,8,0.25); color:#facc15; border-color:#eab308;">⌛ Just Closed (3-Day Grace): ' + job.display_last_date + '</span>';
+        } else if (job.is_expired) {
+          deadlineBadge = '<span class="countdown-expired">Closed: ' + job.display_last_date + '</span>';
         } else if (job.days_left === 0) {
           deadlineBadge = '<span class="countdown-urgent">🚨 CLOSING TODAY!</span>';
         } else if (job.days_left === 1) {
@@ -1404,8 +1458,11 @@ async function generateDashboardHtml(jobs, stats) {
       const deadline = document.getElementById('deadlineFilter').value;
       const sort = document.getElementById('sortOrder').value;
 
+      // User specifically requested expired if archive toggle is on, or category/dropdown is expired
+      const userWantsExpired = includeArchive || (activeCategory === 'expired') || (deadline === 'expired');
+
       // Update reset button visibility
-      const isFiltered = (q !== '') || (tier !== 'all') || (status !== 'all') || (deadline !== 'all') || (activePortal !== 'all') || (activeCategory !== 'all');
+      const isFiltered = (q !== '') || (tier !== 'all') || (status !== 'all') || (deadline !== 'all') || (activePortal !== 'all') || (activeCategory !== 'live') || includeArchive;
       const resetBtn = document.getElementById('btnResetFilters');
       if (resetBtn) resetBtn.style.display = isFiltered ? 'inline-flex' : 'none';
 
@@ -1413,11 +1470,16 @@ async function generateDashboardHtml(jobs, stats) {
         // Portal Source Filter
         if (activePortal !== 'all' && j.portal_id !== activePortal) return false;
 
+        // Archive Separation: Hide expired jobs unless archive mode is on or specifically chosen
+        if (!userWantsExpired && j.is_expired) return false;
+
         // Category Tab Filter
         if (activeCategory === 'ready_to_apply') {
           if (j.status !== 'Eligible' || j.is_expired) return false;
         } else if (activeCategory === 'manual_review') {
           if (j.status !== 'Manual Review' || j.is_expired) return false;
+        } else if (activeCategory === 'live') {
+          if (j.is_expired) return false;
         } else if (activeCategory === 'expired') {
           if (!j.is_expired) return false;
         }
@@ -1465,7 +1527,14 @@ async function generateDashboardHtml(jobs, stats) {
         return 0;
       });
 
-      document.getElementById('visibleCounter').innerText = 'Showing ' + filtered.length + ' of ' + allJobs.length + ' jobs';
+      const totalLive = allJobs.filter(j => !j.is_expired).length;
+      const totalExpired = allJobs.filter(j => j.is_expired).length;
+
+      if (!userWantsExpired) {
+        document.getElementById('visibleCounter').innerHTML = 'Showing <strong>' + filtered.length + '</strong> of ' + totalLive + ' live jobs <span style="color:#94a3b8; font-size:11px; margin-left:6px; cursor:pointer; text-decoration:underline;" onclick="toggleArchiveMode()">(' + totalExpired + ' archived hidden)</span>';
+      } else {
+        document.getElementById('visibleCounter').innerHTML = 'Showing <strong>' + filtered.length + '</strong> of ' + allJobs.length + ' total jobs (including archive)';
+      }
 
       if (currentViewMode === 'timeline') {
         renderTimelineView(filtered);
@@ -1482,18 +1551,28 @@ async function generateDashboardHtml(jobs, stats) {
     document.getElementById('tierFilter').addEventListener('change', filterJobs);
     document.getElementById('statusFilter').addEventListener('change', () => {
       if (document.getElementById('statusFilter').value !== 'all') {
-        activeCategory = 'all';
+        activeCategory = 'live';
         document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
-        document.getElementById('tab-all').classList.add('active');
+        const liveTab = document.getElementById('tab-live');
+        if (liveTab) liveTab.classList.add('active');
       }
       filterJobs();
     });
     document.getElementById('deadlineFilter').addEventListener('change', () => {
-      if (document.getElementById('deadlineFilter').value !== 'all') {
-        activeCategory = 'all';
+      const val = document.getElementById('deadlineFilter').value;
+      if (val === 'expired') {
+        includeArchive = true;
+        activeCategory = 'expired';
         document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
-        document.getElementById('tab-all').classList.add('active');
+        const expTab = document.getElementById('tab-expired');
+        if (expTab) expTab.classList.add('active');
+      } else if (val !== 'all') {
+        activeCategory = 'live';
+        document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+        const liveTab = document.getElementById('tab-live');
+        if (liveTab) liveTab.classList.add('active');
       }
+      updateLiveCounters();
       filterJobs();
     });
     document.getElementById('sortOrder').addEventListener('change', filterJobs);
