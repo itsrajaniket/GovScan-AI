@@ -479,6 +479,8 @@ const responseText = result.response.text();
 | `add` | `node src/cli/add.js` | Manually ingests, evaluates, stores, and alerts on a specific PDF path or URL. |
 | `reminders` | `node src/cli/reminders.js` | Audits upcoming deadlines (7-day/2-day alerts) and sends weekly Sunday summary reports. |
 | `export` | `node src/cli/export-csv.js` | Exports current SQLite database table records into CSV format inside `data/exports/`. |
+| `verify-dates` | `node src/cli/verify-dates.js` | Audits closing dates against current calendar, detecting expired deadlines and correcting formatting. |
+| `verify-eligibility` | `node src/cli/verify-eligibility.js` | Runs strict 2-pass qualification clause audit rescuing borderline posts into Manual Review. |
 
 ---
 

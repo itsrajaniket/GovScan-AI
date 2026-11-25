@@ -31,8 +31,12 @@ async function main() {
 
   if (upcoming.length > 0) {
     console.log(`   Found ${upcoming.length} upcoming deadline(s). Sending Telegram reminder...`);
-    await sendDeadlineReminder(upcoming);
-    console.log('   ✅ Reminder sent.');
+    try {
+      await sendDeadlineReminder(upcoming);
+      console.log('   ✅ Reminder sent.');
+    } catch (err) {
+      console.warn(`   ⚠️ Telegram reminder failed: ${err.message}`);
+    }
   } else {
     console.log('   ℹ️ No deadlines approaching in the next 7 days.');
   }
@@ -52,8 +56,12 @@ async function main() {
     console.log(`   Missed jobs: ${missed.length}`);
     console.log(`   Unreviewed Manual Review jobs: ${unreviewed.length}`);
 
-    await sendWeeklyReport(missed, unreviewed);
-    console.log('   ✅ Weekly report sent to Telegram.');
+    try {
+      await sendWeeklyReport(missed, unreviewed);
+      console.log('   ✅ Weekly report sent to Telegram.');
+    } catch (err) {
+      console.warn(`   ⚠️ Weekly report failed: ${err.message}`);
+    }
   }
 
   closeDB();
