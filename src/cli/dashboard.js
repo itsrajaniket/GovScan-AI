@@ -529,47 +529,67 @@ async function generateDashboardHtml(jobs, stats) {
 
     /* Jobs Cards Grid */
     .jobs-list {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
+      display: grid;
+      gap: 20px;
     }
+    .jobs-list.mode-grid {
+      grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+    }
+    .jobs-list.mode-rows {
+      grid-template-columns: 1fr;
+    }
+    @media (max-width: 900px) {
+      .jobs-list.mode-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .job-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 18px 22px;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+      border-radius: 14px;
+      padding: 20px 22px;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
       position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
     }
-    .job-card:hover { border-color: #38bdf8; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
-    .job-card.tier-1 { border-left: 4px solid var(--tier1); }
-    .job-card.tier-2 { border-left: 4px solid var(--tier2); }
-    .job-card.tier-3 { border-left: 4px solid var(--tier3); }
-    .job-card.tier-4 { border-left: 4px solid var(--tier4); }
+    .job-card:hover {
+      transform: translateY(-2px);
+      border-color: #38bdf8;
+      box-shadow: 0 8px 28px rgba(14, 165, 233, 0.14);
+    }
+    .job-card.tier-1 { border-left: 5px solid var(--tier1); }
+    .job-card.tier-2 { border-left: 5px solid var(--tier2); }
+    .job-card.tier-3 { border-left: 5px solid var(--tier3); }
+    .job-card.tier-4 { border-left: 5px solid var(--tier4); }
 
     .card-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      gap: 16px;
+      gap: 14px;
       margin-bottom: 10px;
-      flex-wrap: wrap;
     }
-    .post-info { flex: 1 1 320px; }
+    .org-area { flex: 1 1 auto; }
     .org-title-row {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
-      margin-bottom: 4px;
+      margin-bottom: 5px;
+    }
+    .org-icon {
+      font-size: 14px;
     }
     .org-title {
       font-size: 13px;
       text-transform: uppercase;
       font-weight: 700;
       color: #38bdf8;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.6px;
     }
     .source-badge {
       font-size: 11px;
@@ -586,13 +606,25 @@ async function generateDashboardHtml(jobs, stats) {
     .post-name {
       font-size: 18px;
       font-weight: 700;
-      color: #fff;
+      color: #f8fafc;
+      line-height: 1.35;
+      margin: 4px 0 6px 0;
     }
-    .advt-code {
-      font-size: 12px;
-      color: var(--text-muted);
+    .advt-code-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 2px;
+    }
+    .advt-pill {
+      font-size: 11px;
+      color: #94a3b8;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      padding: 2px 7px;
+      border-radius: 5px;
       font-family: 'JetBrains Mono', monospace;
-      margin-top: 4px;
     }
 
     .badges {
@@ -618,30 +650,112 @@ async function generateDashboardHtml(jobs, stats) {
     .badge-review { background: rgba(217, 119, 6, 0.25); color: #f59e0b; border: 1px solid #f59e0b; }
     .badge-not-eligible { background: rgba(220, 38, 38, 0.25); color: #ef4444; border: 1px solid #ef4444; }
 
-    /* Candidate Match Visualizer Row */
-    .match-chips-row {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      align-items: center;
-      margin: 10px 0 12px 0;
-      padding: 8px 12px;
-      background: #0f172a;
+    /* Key Metrics 2x2 Structured Grid */
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 9px;
+      margin: 12px 0 14px 0;
+    }
+    @media (max-width: 540px) {
+      .meta-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .meta-tile {
+      background: #090d16;
       border: 1px solid #1e293b;
       border-radius: 8px;
+      padding: 9px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: border-color 0.15s ease, background 0.15s ease;
     }
-    .match-label {
+    .meta-tile:hover {
+      border-color: #334155;
+      background: #0b1120;
+    }
+    .tile-label {
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #64748b;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .tile-val {
+      font-size: 12.5px;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .val-highlight {
+      font-weight: 700;
+      color: #f1f5f9;
+    }
+    .sub-pill {
+      font-size: 10.5px;
+      color: #94a3b8;
+      background: #1e293b;
+      border: 1px solid #334155;
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    /* Candidate Match Fit Box */
+    .match-box {
+      background: #0b1120;
+      border: 1px solid #1e293b;
+      border-left: 3px solid #3b82f6;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin: 10px 0 12px 0;
+    }
+    .match-box-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 7px;
+    }
+    .match-box-title {
       font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
+      letter-spacing: 0.6px;
       color: #94a3b8;
-      margin-right: 4px;
-      letter-spacing: 0.5px;
+    }
+    .match-fit-status {
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+    .fit-strong {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+    .fit-review {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+    .match-chips-list {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
     }
     .match-chip {
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 600;
-      padding: 3px 10px;
+      padding: 3px 9px;
       border-radius: 6px;
       display: inline-flex;
       align-items: center;
@@ -651,21 +765,8 @@ async function generateDashboardHtml(jobs, stats) {
     .chip-age { background: var(--chip-age); color: var(--chip-age-text); border: 1px solid rgba(59, 130, 246, 0.3); }
     .chip-exp { background: var(--chip-exp); color: var(--chip-exp-text); border: 1px solid rgba(168, 85, 247, 0.3); }
     .chip-review { background: var(--chip-review); color: var(--chip-review-text); border: 1px solid rgba(245, 158, 11, 0.3); }
-
-    /* Metadata pills row */
-    .meta-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 16px;
-      font-size: 13px;
-      color: #cbd5e1;
-      margin: 10px 0;
-      padding: 10px 0;
-      border-top: 1px solid #1e293b;
-      border-bottom: 1px solid #1e293b;
-    }
-    .meta-item { display: flex; align-items: center; gap: 6px; }
-    .meta-item strong { color: #fff; }
+    .chip-age.age-warn { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border-color: rgba(239, 68, 68, 0.4); }
+    .chip-exp.exp-warn { background: rgba(245, 158, 11, 0.2); color: #fde68a; border-color: rgba(245, 158, 11, 0.4); }
 
     /* Live Countdown Display */
     .countdown-urgent {
@@ -952,7 +1053,8 @@ async function generateDashboardHtml(jobs, stats) {
         </div>
 
         <div class="view-toggle">
-          <button class="view-btn active" id="btnViewGrid" onclick="setViewMode('grid')">🗂️ Cards</button>
+          <button class="view-btn active" id="btnViewGrid" onclick="setViewMode('grid')">🗂️ Grid (2-Col)</button>
+          <button class="view-btn" id="btnViewRows" onclick="setViewMode('rows')">📄 Full Width</button>
           <button class="view-btn" id="btnViewTimeline" onclick="setViewMode('timeline')">📅 Timeline</button>
         </div>
       </div>
@@ -1126,6 +1228,7 @@ async function generateDashboardHtml(jobs, stats) {
     function setViewMode(mode) {
       currentViewMode = mode;
       document.getElementById('btnViewGrid').classList.toggle('active', mode === 'grid');
+      document.getElementById('btnViewRows').classList.toggle('active', mode === 'rows');
       document.getElementById('btnViewTimeline').classList.toggle('active', mode === 'timeline');
       filterJobs();
     }
@@ -1366,14 +1469,20 @@ async function generateDashboardHtml(jobs, stats) {
 
       return \`
         <div class="job-card \${tierClass}">
+          <!-- Top Bar: Organisation & Portal Source + Tier / Status Badges -->
           <div class="card-header">
-            <div class="post-info">
+            <div class="org-area">
               <div class="org-title-row">
+                <span class="org-icon">🏛️</span>
                 <span class="org-title">\${escapeHtml(job.organisation)}</span>
                 <span class="source-badge">\${job.portal_icon} \${escapeHtml(job.portal_name)}</span>
               </div>
-              <div class="post-name">\${escapeHtml(job.post_name)}</div>
-              \${job.advertisement_no ? \`<div class="advt-code">Advt No: \${escapeHtml(job.advertisement_no)} \${job.post_code ? ' | Post Code: ' + escapeHtml(job.post_code) : ''}</div>\` : ''}
+              <h3 class="post-name">\${escapeHtml(job.post_name)}</h3>
+              \${job.advertisement_no ? \`
+                <div class="advt-code-row">
+                  <span class="advt-pill">Advt: \${escapeHtml(job.advertisement_no)}</span>
+                  \${job.post_code ? \`<span class="advt-pill code-pill">Code: \${escapeHtml(job.post_code)}</span>\` : ''}
+                </div>\` : ''}
             </div>
             <div class="badges">
               <span class="badge \${tierBadgeClass}">Tier \${job.tier}</span>
@@ -1381,19 +1490,43 @@ async function generateDashboardHtml(jobs, stats) {
             </div>
           </div>
 
-          <!-- Candidate Match Visualizer -->
-          <div class="match-chips-row">
-            <span class="match-label">Your Match:</span>
-            \${matchChips.join('')}
+          <!-- Structured Key Metrics 2x2 Grid (Clear & Scannable) -->
+          <div class="meta-grid">
+            <div class="meta-tile deadline-tile">
+              <div class="tile-label">📅 Application Deadline</div>
+              <div class="tile-val">\${deadlineBadge}</div>
+            </div>
+            <div class="meta-tile pay-tile">
+              <div class="tile-label">💰 Salary / Pay Scale</div>
+              <div class="tile-val" title="\${escapeHtml(job.pay || 'Check Notification')}">
+                <span class="val-highlight">\${escapeHtml(job.pay || 'As per Govt Norms')}</span>
+                <span class="sub-pill">\${escapeHtml(job.employment_type || 'Regular')}</span>
+              </div>
+            </div>
+            <div class="meta-tile vac-tile">
+              <div class="tile-label">👥 Vacancies &amp; Location</div>
+              <div class="tile-val">
+                <span class="val-highlight">\${job.vacancies_count ? job.vacancies_count + ' Vacancies' : 'Positions Open'}</span>
+                <span class="sub-pill">📍 \${escapeHtml(job.location || 'All India')}</span>
+              </div>
+            </div>
+            <div class="meta-tile fee-tile">
+              <div class="tile-label">💳 Application Fee</div>
+              <div class="tile-val">
+                <span class="val-highlight">\${escapeHtml(job.fee || 'Exempted / Unstated')}</span>
+              </div>
+            </div>
           </div>
 
-          <!-- Metadata row -->
-          <div class="meta-row">
-            \${job.pay ? \`<div class="meta-item">💰 <strong>\${escapeHtml(job.pay)}</strong> (\${escapeHtml(job.employment_type || 'N/A')})</div>\` : ''}
-            \${job.location ? \`<div class="meta-item">📍 <strong>\${escapeHtml(job.location)}</strong></div>\` : ''}
-            \${job.vacancies_count ? \`<div class="meta-item">👥 Vacancies: <strong>\${job.vacancies_count}</strong></div>\` : ''}
-            <div class="meta-item">📅 Last Date: \${deadlineBadge}</div>
-            \${job.fee ? \`<div class="meta-item">💳 Fee: <strong>\${escapeHtml(job.fee)}</strong></div>\` : ''}
+          <!-- Candidate Match Visualizer Box -->
+          <div class="match-box">
+            <div class="match-box-header">
+              <span class="match-box-title">⚡ Candidate Match Fit</span>
+              <span class="match-fit-status \${match.degreeConfidence === 'high' ? 'fit-strong' : 'fit-review'}">\${match.degreeConfidence === 'high' ? 'High Relevance' : 'Review Match'}</span>
+            </div>
+            <div class="match-chips-list">
+              \${matchChips.join('')}
+            </div>
           </div>
 
           \${flagsHtml}
@@ -1407,14 +1540,14 @@ async function generateDashboardHtml(jobs, stats) {
             \${job.reasoning ? \`<div class="reasoning-box"><strong>Gemini AI Evaluation:</strong><br>\${escapeHtml(job.reasoning)}</div>\` : ''}
           </div>
 
-          <!-- Action Hub -->
+          <!-- Action Hub Footer -->
           <div class="card-footer">
             <div class="action-links">
               \${job.official_apply_url ? \`<a href="\${job.official_apply_url}" target="_blank" class="btn-apply-primary">🚀 Apply Online Portal</a>\` : ''}
               \${job.official_notification_url ? \`<a href="\${job.official_notification_url}" target="_blank" class="btn-notice-secondary">📄 Official Notification PDF</a>\` : ''}
               <button class="btn-copy" onclick="copyJobSummary(\${job.id})">📋 Copy Details</button>
             </div>
-            <div style="font-size:12px; color:var(--text-muted); font-family:'JetBrains Mono', monospace;">
+            <div class="detected-timestamp">
               Detected: \${job.date_first_detected || 'N/A'}
             </div>
           </div>
@@ -1484,7 +1617,7 @@ async function generateDashboardHtml(jobs, stats) {
                 <div class="timeline-bucket-title">\${b.title}</div>
                 <div class="timeline-bucket-count">\${b.jobs.length}</div>
               </div>
-              <div class="jobs-list">
+              <div class="jobs-list mode-grid">
                 \${b.jobs.map(j => renderJobCard(j)).join('')}
               </div>
             </div>
@@ -1508,7 +1641,8 @@ async function generateDashboardHtml(jobs, stats) {
         \`;
         return;
       }
-      container.innerHTML = '<div class="jobs-list">' + jobs.map(j => renderJobCard(j)).join('') + '</div>';
+      const modeClass = (currentViewMode === 'rows') ? 'jobs-list mode-rows' : 'jobs-list mode-grid';
+      container.innerHTML = '<div class="' + modeClass + '">' + jobs.map(j => renderJobCard(j)).join('') + '</div>';
     }
 
     function filterJobs() {
