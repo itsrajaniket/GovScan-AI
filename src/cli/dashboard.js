@@ -545,33 +545,33 @@ async function generateDashboardHtml(jobs, stats) {
     }
 
     .job-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 14px;
-      padding: 20px 22px;
+      background: #0d131f;
+      border: 1px solid rgba(51, 65, 85, 0.45);
+      border-radius: 12px;
+      padding: 18px 20px;
       transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
       position: relative;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
     }
     .job-card:hover {
       transform: translateY(-2px);
       border-color: #38bdf8;
-      box-shadow: 0 8px 28px rgba(14, 165, 233, 0.14);
+      box-shadow: 0 8px 24px rgba(14, 165, 233, 0.12);
     }
-    .job-card.tier-1 { border-left: 5px solid var(--tier1); }
-    .job-card.tier-2 { border-left: 5px solid var(--tier2); }
-    .job-card.tier-3 { border-left: 5px solid var(--tier3); }
-    .job-card.tier-4 { border-left: 5px solid var(--tier4); }
+    .job-card.tier-1 { border-left: 4px solid var(--tier1); }
+    .job-card.tier-2 { border-left: 4px solid var(--tier2); }
+    .job-card.tier-3 { border-left: 4px solid var(--tier3); }
+    .job-card.tier-4 { border-left: 4px solid var(--tier4); }
 
     .card-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      gap: 14px;
-      margin-bottom: 10px;
+      gap: 12px;
+      margin-bottom: 8px;
     }
     .org-area { flex: 1 1 auto; }
     .org-title-row {
@@ -579,17 +579,15 @@ async function generateDashboardHtml(jobs, stats) {
       align-items: center;
       gap: 8px;
       flex-wrap: wrap;
-      margin-bottom: 5px;
+      margin-bottom: 4px;
     }
-    .org-icon {
-      font-size: 14px;
-    }
+    .org-icon { font-size: 14px; }
     .org-title {
-      font-size: 13px;
+      font-size: 12px;
       text-transform: uppercase;
       font-weight: 700;
       color: #38bdf8;
-      letter-spacing: 0.6px;
+      letter-spacing: 0.5px;
     }
     .source-badge {
       font-size: 11px;
@@ -597,18 +595,18 @@ async function generateDashboardHtml(jobs, stats) {
       color: #94a3b8;
       background: #1e293b;
       border: 1px solid #334155;
-      padding: 2px 8px;
-      border-radius: 6px;
+      padding: 2px 7px;
+      border-radius: 5px;
       display: inline-flex;
       align-items: center;
       gap: 4px;
     }
     .post-name {
-      font-size: 18px;
+      font-size: 17px;
       font-weight: 700;
       color: #f8fafc;
       line-height: 1.35;
-      margin: 4px 0 6px 0;
+      margin: 4px 0;
     }
     .advt-code-row {
       display: flex;
@@ -620,23 +618,23 @@ async function generateDashboardHtml(jobs, stats) {
     .advt-pill {
       font-size: 11px;
       color: #94a3b8;
-      background: #0f172a;
+      background: rgba(15, 23, 42, 0.6);
       border: 1px solid #1e293b;
       padding: 2px 7px;
-      border-radius: 5px;
+      border-radius: 4px;
       font-family: 'JetBrains Mono', monospace;
     }
 
     .badges {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       align-items: center;
       flex-wrap: wrap;
     }
     .badge {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
-      padding: 4px 10px;
+      padding: 3px 8px;
       border-radius: 20px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -650,207 +648,133 @@ async function generateDashboardHtml(jobs, stats) {
     .badge-review { background: rgba(217, 119, 6, 0.25); color: #f59e0b; border: 1px solid #f59e0b; }
     .badge-not-eligible { background: rgba(220, 38, 38, 0.25); color: #ef4444; border: 1px solid #ef4444; }
 
-    /* Key Metrics 2x2 Structured Grid */
-    .meta-grid {
+    /* Clean Unified Spec Pad (No bulky boxes!) */
+    .job-specs {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 9px;
-      margin: 12px 0 14px 0;
-    }
-    @media (max-width: 540px) {
-      .meta-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-    .meta-tile {
-      background: #090d16;
-      border: 1px solid #1e293b;
+      gap: 8px 14px;
+      padding: 10px 14px;
+      background: rgba(15, 23, 42, 0.45);
+      border: 1px solid rgba(51, 65, 85, 0.35);
       border-radius: 8px;
-      padding: 9px 12px;
+      margin: 10px 0;
+    }
+    @media (max-width: 520px) {
+      .job-specs { grid-template-columns: 1fr; }
+    }
+    .spec-cell {
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      transition: border-color 0.15s ease, background 0.15s ease;
+      gap: 3px;
     }
-    .meta-tile:hover {
-      border-color: #334155;
-      background: #0b1120;
-    }
-    .tile-label {
+    .spec-label {
       font-size: 10.5px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       color: #64748b;
       font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 4px;
     }
-    .tile-val {
+    .spec-value {
       font-size: 12.5px;
-      color: #e2e8f0;
+      color: #cbd5e1;
       display: flex;
       align-items: center;
-      flex-wrap: wrap;
       gap: 6px;
+      flex-wrap: wrap;
     }
-    .val-highlight {
-      font-weight: 700;
-      color: #f1f5f9;
-    }
-    .sub-pill {
-      font-size: 10.5px;
-      color: #94a3b8;
-      background: #1e293b;
-      border: 1px solid #334155;
-      padding: 1px 6px;
-      border-radius: 4px;
-    }
+    .val-bold { font-weight: 700; color: #f8fafc; }
+    .val-sub { color: #94a3b8; font-size: 11.5px; }
 
-    /* Candidate Match Fit Box */
-    .match-box {
-      background: #0b1120;
-      border: 1px solid #1e293b;
+    /* Match Summary Bar */
+    .match-summary-bar {
+      margin: 6px 0 10px 0;
+      padding: 8px 12px;
+      background: rgba(30, 41, 59, 0.3);
       border-left: 3px solid #3b82f6;
-      border-radius: 8px;
-      padding: 10px 12px;
-      margin: 10px 0 12px 0;
-    }
-    .match-box-header {
+      border-radius: 6px;
+      font-size: 12px;
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .match-headline {
+      display: flex;
       align-items: center;
-      margin-bottom: 7px;
-    }
-    .match-box-title {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      color: #94a3b8;
-    }
-    .match-fit-status {
-      font-size: 10.5px;
-      font-weight: 700;
-      text-transform: uppercase;
-      padding: 2px 7px;
-      border-radius: 4px;
-    }
-    .fit-strong {
-      background: rgba(16, 185, 129, 0.2);
-      color: #34d399;
-      border: 1px solid rgba(16, 185, 129, 0.35);
-    }
-    .fit-review {
-      background: rgba(245, 158, 11, 0.2);
-      color: #fbbf24;
-      border: 1px solid rgba(245, 158, 11, 0.35);
-    }
-    .match-chips-list {
-      display: flex;
-      gap: 6px;
+      gap: 8px;
       flex-wrap: wrap;
-      align-items: center;
+      line-height: 1.4;
     }
-    .match-chip {
-      font-size: 11.5px;
-      font-weight: 600;
-      padding: 3px 9px;
-      border-radius: 6px;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .chip-degree { background: var(--chip-degree); color: var(--chip-degree-text); border: 1px solid rgba(16, 185, 129, 0.3); }
-    .chip-age { background: var(--chip-age); color: var(--chip-age-text); border: 1px solid rgba(59, 130, 246, 0.3); }
-    .chip-exp { background: var(--chip-exp); color: var(--chip-exp-text); border: 1px solid rgba(168, 85, 247, 0.3); }
-    .chip-review { background: var(--chip-review); color: var(--chip-review-text); border: 1px solid rgba(245, 158, 11, 0.3); }
-    .chip-age.age-warn { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border-color: rgba(239, 68, 68, 0.4); }
-    .chip-exp.exp-warn { background: rgba(245, 158, 11, 0.2); color: #fde68a; border-color: rgba(245, 158, 11, 0.4); }
-
-    /* Live Countdown Display */
-    .countdown-urgent {
-      background: rgba(239, 68, 68, 0.2);
-      border: 1px solid #ef4444;
-      color: #fca5a5;
+    .match-status-badge {
+      font-size: 10px;
       font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 6px;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      animation: pulse 2s infinite;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
     }
-    .countdown-active {
-      background: rgba(16, 185, 129, 0.15);
-      border: 1px solid #10b981;
-      color: #6ee7b7;
-      font-weight: 600;
-      padding: 2px 8px;
-      border-radius: 6px;
-    }
-    .countdown-expired {
-      color: #64748b;
-      text-decoration: line-through;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.7; }
-    }
+    .status-high { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
+    .status-review { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
+    .match-spec-item { color: #e2e8f0; font-weight: 500; font-size: 11.5px; }
+    .match-spec-item.text-warn { color: #fca5a5; font-weight: 600; }
+    .spec-sep { color: #475569; font-size: 11px; }
+    .review-hint { color: #fde68a; font-size: 11.5px; margin-top: 3px; }
 
     .flags-row {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       flex-wrap: wrap;
-      margin: 8px 0;
+      margin-top: 4px;
     }
     .flag-tag {
-      background: #1e1b4b;
-      border: 1px solid #4338ca;
-      color: #a5b4fc;
+      background: rgba(88, 28, 135, 0.25);
+      border: 1px solid rgba(168, 85, 247, 0.35);
+      color: #d8b4fe;
       font-size: 11px;
-      padding: 3px 8px;
-      border-radius: 6px;
+      padding: 2px 7px;
+      border-radius: 4px;
       font-family: 'JetBrains Mono', monospace;
     }
 
-    /* Accordion Details */
+    /* Accordion */
     .accordion-btn {
-      background: none;
-      border: none;
-      color: #38bdf8;
-      font-size: 13px;
+      background: rgba(15, 23, 42, 0.35);
+      border: 1px solid #1e293b;
+      color: #93c5fd;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      justify-content: space-between;
+      gap: 8px;
       margin-top: 6px;
-      padding: 0;
+      padding: 6px 10px;
+      border-radius: 6px;
+      width: 100%;
+      transition: all 0.15s ease;
     }
-    .accordion-btn:hover { text-decoration: underline; }
+    .accordion-btn:hover { background: #1e293b; color: #fff; border-color: #334155; }
     .accordion-content {
       display: none;
-      background: #0f172a;
+      background: #090d16;
       border: 1px solid #1e293b;
       border-radius: 8px;
-      padding: 14px;
-      margin-top: 10px;
-      font-size: 13px;
+      padding: 12px;
+      margin-top: 8px;
+      font-size: 12px;
     }
     .accordion-content.show { display: block; }
     .clause-box {
       font-style: italic;
       color: #93c5fd;
       border-left: 3px solid var(--primary);
-      padding-left: 12px;
-      margin-bottom: 10px;
+      padding-left: 10px;
+      margin-bottom: 8px;
       background: rgba(59, 130, 246, 0.05);
-      padding: 8px 12px;
+      padding: 8px 10px;
       border-radius: 0 6px 6px 0;
     }
-    .reasoning-box { color: #cbd5e1; line-height: 1.6; }
+    .reasoning-box { color: #cbd5e1; line-height: 1.55; }
 
     /* Card Footer & Action Hub */
     .card-footer {
@@ -1454,13 +1378,12 @@ async function generateDashboardHtml(jobs, stats) {
       }
 
       const match = job.candidate_match || {};
-      const matchChips = [
-        '<span class="match-chip chip-degree">' + escapeHtml(match.degreeMatch || 'Qualifications Verified') + '</span>',
-        '<span class="match-chip chip-age">' + escapeHtml(match.ageMatch || 'Age Verified') + '</span>',
-        '<span class="match-chip chip-exp">' + escapeHtml(match.expMatch || 'Experience Checked') + '</span>',
-      ];
-      if (match.reviewNote) {
-        matchChips.push('<span class="match-chip chip-review">' + escapeHtml(match.reviewNote) + '</span>');
+      let salaryDisplay = job.pay || 'As per Govt Norms';
+      if (salaryDisplay.length > 32) {
+        if (/assam rifle/i.test(salaryDisplay)) salaryDisplay = 'Assam Rifles Scale';
+        else if (/7th cpc|level|matrix/i.test(salaryDisplay)) salaryDisplay = '7th CPC Scale';
+        else if (/ugc|aicte/i.test(salaryDisplay)) salaryDisplay = 'UGC / AICTE Norms';
+        else salaryDisplay = 'As per Govt Norms';
       }
 
       const flagsHtml = (job.flags && job.flags.length > 0)
@@ -1490,50 +1413,54 @@ async function generateDashboardHtml(jobs, stats) {
             </div>
           </div>
 
-          <!-- Structured Key Metrics 2x2 Grid (Clear & Scannable) -->
-          <div class="meta-grid">
-            <div class="meta-tile deadline-tile">
-              <div class="tile-label">📅 Application Deadline</div>
-              <div class="tile-val">\${deadlineBadge}</div>
+          <!-- Clean Unified Spec Pad (No bulky boxes!) -->
+          <div class="job-specs">
+            <div class="spec-cell">
+              <span class="spec-label">Deadline</span>
+              <span class="spec-value">\${deadlineBadge}</span>
             </div>
-            <div class="meta-tile pay-tile">
-              <div class="tile-label">💰 Salary / Pay Scale</div>
-              <div class="tile-val" title="\${escapeHtml(job.pay || 'Check Notification')}">
-                <span class="val-highlight">\${escapeHtml(job.pay || 'As per Govt Norms')}</span>
-                <span class="sub-pill">\${escapeHtml(job.employment_type || 'Regular')}</span>
-              </div>
+            <div class="spec-cell">
+              <span class="spec-label">Salary / Pay</span>
+              <span class="spec-value" title="\${escapeHtml(job.pay || '')}">
+                <span class="val-bold">\${escapeHtml(salaryDisplay)}</span>
+                \${job.employment_type ? \`<span class="val-sub">(\${escapeHtml(job.employment_type)})</span>\` : ''}
+              </span>
             </div>
-            <div class="meta-tile vac-tile">
-              <div class="tile-label">👥 Vacancies &amp; Location</div>
-              <div class="tile-val">
-                <span class="val-highlight">\${job.vacancies_count ? job.vacancies_count + ' Vacancies' : 'Positions Open'}</span>
-                <span class="sub-pill">📍 \${escapeHtml(job.location || 'All India')}</span>
-              </div>
+            <div class="spec-cell">
+              <span class="spec-label">Posts &amp; Location</span>
+              <span class="spec-value">
+                <span class="val-bold">\${job.vacancies_count ? job.vacancies_count + ' Vacancies' : 'Positions Open'}</span>
+                <span class="val-sub">📍 \${escapeHtml(job.location || 'All India')}</span>
+              </span>
             </div>
-            <div class="meta-tile fee-tile">
-              <div class="tile-label">💳 Application Fee</div>
-              <div class="tile-val">
-                <span class="val-highlight">\${escapeHtml(job.fee || 'Exempted / Unstated')}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Candidate Match Visualizer Box -->
-          <div class="match-box">
-            <div class="match-box-header">
-              <span class="match-box-title">⚡ Candidate Match Fit</span>
-              <span class="match-fit-status \${match.degreeConfidence === 'high' ? 'fit-strong' : 'fit-review'}">\${match.degreeConfidence === 'high' ? 'High Relevance' : 'Review Match'}</span>
-            </div>
-            <div class="match-chips-list">
-              \${matchChips.join('')}
+            <div class="spec-cell">
+              <span class="spec-label">Application Fee</span>
+              <span class="spec-value">
+                <span class="val-bold">\${escapeHtml(job.fee || 'Exempted')}</span>
+              </span>
             </div>
           </div>
 
-          \${flagsHtml}
+          <!-- Streamlined Match Summary Bar -->
+          <div class="match-summary-bar">
+            <div class="match-headline">
+              <span class="match-status-badge \${match.degreeConfidence === 'high' ? 'status-high' : 'status-review'}">
+                \${match.degreeConfidence === 'high' ? '⚡ High Match' : '🔍 Review Needed'}
+              </span>
+              <span class="match-spec-item">\${escapeHtml(match.degreeMatch || 'Qualifications Verified')}</span>
+              <span class="spec-sep">•</span>
+              <span class="match-spec-item \${match.ageEligible ? '' : 'text-warn'}">\${escapeHtml(match.ageMatch || 'Age Verified')}</span>
+              <span class="spec-sep">•</span>
+              <span class="match-spec-item \${match.needsExp ? 'text-warn' : ''}">\${escapeHtml(match.expMatch || 'Freshers OK')}</span>
+            </div>
+            \${match.reviewNote ? \`<div class="review-hint">💡 \${escapeHtml(match.reviewNote)}</div>\` : ''}
+            \${flagsHtml}
+          </div>
 
           <!-- Details Accordion -->
           <button class="accordion-btn" onclick="toggleDetails(this)">
-            <span>▶ View Eligibility Reasoning &amp; Notification Clause</span>
+            <span>📋 Eligibility Reasoning &amp; Notification Clause</span>
+            <span class="chevron">▼</span>
           </button>
           <div class="accordion-content">
             \${job.qualification_clause ? \`<div class="clause-box"><strong>Official Notification Clause (Page \${job.page_number || 'N/A'}):</strong><br>"\${escapeHtml(job.qualification_clause)}"</div>\` : ''}
@@ -1545,7 +1472,7 @@ async function generateDashboardHtml(jobs, stats) {
             <div class="action-links">
               \${job.official_apply_url ? \`<a href="\${job.official_apply_url}" target="_blank" class="btn-apply-primary">🚀 Apply Online Portal</a>\` : ''}
               \${job.official_notification_url ? \`<a href="\${job.official_notification_url}" target="_blank" class="btn-notice-secondary">📄 Official Notification PDF</a>\` : ''}
-              <button class="btn-copy" onclick="copyJobSummary(\${job.id})">📋 Copy Details</button>
+              <button class="btn-copy" onclick="copyJobSummary(\${job.id})">📋 Copy</button>
             </div>
             <div class="detected-timestamp">
               Detected: \${job.date_first_detected || 'N/A'}
