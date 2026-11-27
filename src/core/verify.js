@@ -63,12 +63,34 @@ export function verifyNoticeCandidate(text = '', url = '') {
     'admit card', 'call letter', 'hall ticket',
     'answer key', 'result', 'marks', 'score card', 'merit list',
     'tender', 'quotation', 'expression of interest', 'eoi',
-    'minutes of meeting', 'annual report', 'rejected list', 'cancellation'
+    'minutes of meeting', 'annual report', 'rejected list', 'cancellation',
+    'amendment order', 'hallmarking', 'advisory committee', 'executive committee',
+    'peer review committee', 'gazette notification', 'transfer order', 'seniority list',
+    'roster', 'guidelines and exemptions', 'structure of'
   ];
 
   const corrigendumKeywords = config.settings?.pipeline?.verify_keywords_corrigendum || [
     'corrigendum', 'addendum', 'amendment', 'erratum', 'extension of last date', 'date extension'
   ];
+
+  // 0. Historical year filter (Drop notices with explicit years older than currentYear - 1)
+  const currentYear = new Date().getFullYear();
+  const minAllowedYear = currentYear - 1; // e.g. 2025 when currentYear is 2026
+  const yearMatches = fullNormalized.match(/\b(19\d\d|20\d\d)\b/g);
+  if (yearMatches) {
+    const years = yearMatches
+      .map(y => parseInt(y, 10))
+      .filter(y => y >= 1990 && y <= currentYear + 2);
+    // If explicit years are found and all of them are older than minAllowedYear, skip
+    if (years.length > 0 && years.every(y => y < minAllowedYear)) {
+      return {
+        isVacancy: false,
+        isCorrigendum: false,
+        skipReason: `Historical notice year detected (${years.join(', ')} < ${minAllowedYear})`,
+        confidence: 'high',
+      };
+    }
+  }
 
   // 1. Check for skip keywords with word boundary support for single words
   for (const kw of skipKeywords) {

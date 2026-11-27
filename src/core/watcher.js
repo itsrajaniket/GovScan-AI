@@ -68,11 +68,15 @@ export async function checkSource(source) {
     const notices = [];
 
     if (changed) {
-      // Extract links inside the target area
-      targetArea.find('a').each((_, a) => {
+      // Extract links inside the target area (limit to top 25 links to avoid scanning 10-year archives)
+      const anchors = targetArea.find('a').slice(0, 25);
+      anchors.each((_, a) => {
         const $a = $(a);
         const href = $a.attr('href');
         const text = $a.text().replace(/\s+/g, ' ').trim();
+        // Extract row / block context to catch annual reports, dates, or historical years in the table row
+        const rowContext = $a.closest('tr, li, .item, .card').text().replace(/\s+/g, ' ').trim();
+        const contextualText = rowContext && rowContext.length > text.length ? `${text} - ${rowContext}` : text;
 
         if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
           let fullUrl;
@@ -83,7 +87,7 @@ export async function checkSource(source) {
           }
 
           // Verify if it's a vacancy link
-          const check = verifyNoticeCandidate(text, fullUrl);
+          const check = verifyNoticeCandidate(contextualText, fullUrl);
           if (check.isVacancy) {
             notices.push({
               source_id: source.id,

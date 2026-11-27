@@ -151,6 +151,19 @@ async function main() {
       continue;
     }
 
+    // Safety check: Historical year filter (Drop ancient notices before downloading or spending Gemini tokens)
+    const currentYear = new Date().getFullYear();
+    const minAllowedYear = currentYear - 1;
+    const combinedStr = `${item.title || ''} ${item.url || ''}`.toLowerCase();
+    const yearMatches = combinedStr.match(/\b(19\d\d|20\d\d)\b/g);
+    if (yearMatches) {
+      const explicitYears = yearMatches.map(y => parseInt(y, 10)).filter(y => y >= 1990 && y <= currentYear + 2);
+      if (explicitYears.length > 0 && explicitYears.every(y => y < minAllowedYear)) {
+        console.log(`⏩ Skipping historical notice (< ${minAllowedYear}): ${item.title}`);
+        continue;
+      }
+    }
+
     console.log(`\n📥 Downloading notice: ${item.title}`);
     console.log(`   URL: ${item.url}`);
 
