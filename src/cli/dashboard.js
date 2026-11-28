@@ -534,6 +534,7 @@ async function generateDashboardHtml(jobs, stats) {
     }
     .jobs-list.mode-grid {
       grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+      align-items: stretch;
     }
     .jobs-list.mode-rows {
       grid-template-columns: 1fr;
@@ -553,8 +554,8 @@ async function generateDashboardHtml(jobs, stats) {
       position: relative;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+      height: 100%;
     }
     .job-card:hover {
       transform: translateY(-2px);
@@ -723,16 +724,20 @@ async function generateDashboardHtml(jobs, stats) {
       display: flex;
       gap: 6px;
       flex-wrap: wrap;
-      margin-top: 4px;
+      margin-top: 6px;
     }
     .flag-tag {
-      background: rgba(88, 28, 135, 0.25);
-      border: 1px solid rgba(168, 85, 247, 0.35);
-      color: #d8b4fe;
+      background: rgba(234, 179, 8, 0.12);
+      border: 1px solid rgba(234, 179, 8, 0.28);
+      color: #fde047;
       font-size: 11px;
-      padding: 2px 7px;
-      border-radius: 4px;
-      font-family: 'JetBrains Mono', monospace;
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: 5px;
+      font-family: 'Inter', sans-serif;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
     }
 
     /* Accordion */
@@ -781,7 +786,9 @@ async function generateDashboardHtml(jobs, stats) {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 14px;
+      margin-top: auto;
+      padding-top: 14px;
+      border-top: 1px solid rgba(30, 41, 59, 0.5);
       flex-wrap: wrap;
       gap: 12px;
     }
@@ -1353,6 +1360,46 @@ async function generateDashboardHtml(jobs, stats) {
       document.body.removeChild(textArea);
     }
 
+    function formatFlagLabel(flag) {
+      if (!flag) return '';
+      const map = {
+        'equivalence_unclear': 'Equivalence Check Needed',
+        'obc_certificate': 'OBC Certificate Required',
+        'online_degree_recognition': 'Online Degree Validation',
+        'experience_required': 'Experience Proof Needed',
+        'mca_pursuing': 'MCA Pursuing Check',
+        'age_relaxation_proof': 'Age Relaxation Proof',
+        'gate_required': 'GATE Score Required',
+        'net_required': 'UGC-NET Required',
+        'phd_required': 'PhD Required',
+        'domicile_required': 'State Domicile Required',
+        'category_certificate': 'Category Certificate Required'
+      };
+      if (map[flag]) return map[flag];
+      return flag
+        .split('_')
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+    }
+
+    function formatFeeDisplay(rawFee) {
+      if (!rawFee || /exempt|nil|free|^0$/i.test(rawFee.trim())) {
+        return { short: 'Exempted', full: rawFee || 'Exempted' };
+      }
+      const trimmed = rawFee.trim();
+      const match = trimmed.match(/(?:₹|rs\.?|inr)\s*([\d,]+)/i);
+      if (trimmed.length > 20 && match) {
+        return {
+          short: '₹' + match[1],
+          full: trimmed
+        };
+      }
+      return {
+        short: trimmed,
+        full: trimmed
+      };
+    }
+
     function renderJobCard(job) {
       const tierClass = 'tier-' + job.tier;
       const tierBadgeClass = 'badge-t' + job.tier;
@@ -1386,8 +1433,9 @@ async function generateDashboardHtml(jobs, stats) {
         else salaryDisplay = 'As per Govt Norms';
       }
 
+      const feeInfo = formatFeeDisplay(job.fee);
       const flagsHtml = (job.flags && job.flags.length > 0)
-        ? '<div class="flags-row">' + job.flags.map(f => '<span class="flag-tag">⚠️ ' + escapeHtml(f) + '</span>').join('') + '</div>'
+        ? '<div class="flags-row">' + job.flags.map(f => '<span class="flag-tag" title="Flag: ' + escapeHtml(f) + '">⚠️ ' + escapeHtml(formatFlagLabel(f)) + '</span>').join('') + '</div>'
         : '';
 
       return \`
@@ -1435,8 +1483,9 @@ async function generateDashboardHtml(jobs, stats) {
             </div>
             <div class="spec-cell">
               <span class="spec-label">Application Fee</span>
-              <span class="spec-value">
-                <span class="val-bold">\${escapeHtml(job.fee || 'Exempted')}</span>
+              <span class="spec-value" title="\${escapeHtml(feeInfo.full)}">
+                <span class="val-bold">\${escapeHtml(feeInfo.short)}</span>
+                \${feeInfo.short !== feeInfo.full ? '<span class="val-sub" style="font-size:10.5px; opacity:0.85; cursor:help;">(details ⓘ)</span>' : ''}
               </span>
             </div>
           </div>
@@ -1765,8 +1814,14 @@ async function main() {
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   fs.writeFileSync(outputPath, html, 'utf8');
 
+  // Also sync directly to docs/index.html for GitHub Pages
+  const docsDir = path.join(ROOT, 'docs');
+  fs.mkdirSync(docsDir, { recursive: true });
+  fs.writeFileSync(path.join(docsDir, 'index.html'), html, 'utf8');
+
   console.log(`✅ Dashboard generated successfully!`);
   console.log(`📂 Location: ${outputPath}`);
+  console.log(`🌐 Synced: ${path.join(docsDir, 'index.html')}`);
   console.log(`📊 Included: ${jobs.length} jobs`);
 
   if (shouldOpen) {
